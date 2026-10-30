@@ -1,0 +1,20 @@
+{
+  "Timetable": {
+    "2026-11-02": [
+      [{"LessonNo": "1", "HourFrom": "07:50", "HourTo": "08:35", "Subject": {"Id": 1}, "Teacher": {"Id": 10}, "Classroom": {"Id": 5}, "IsSubstitutionClass": false, "IsCanceled": false}],
+      [{"LessonNo": "2", "HourFrom": "08:55", "HourTo": "09:40", "Subject": {"Id": 2}, "Teacher": {"Id": 11}, "IsSubstitutionClass": false, "IsCanceled": true}],
+      [{"LessonNo": "3", "HourFrom": "09:50", "HourTo": "10:35", "Subject": {"Id": 1}, "Teacher": {"Id": 12}, "IsSubstitutionClass": true, "IsCanceled": false,
+        "OrgDate": "2026-11-02", "OrgLessonNo": "3", "OrgSubject": {"Id": 2}, "OrgTeacher": {"Id": 11}}],
+      [{"LessonNo": "4", "HourFrom": "10:45", "HourTo": "11:30", "Subject": {"Id": 3}, "Teacher": {"Id": 10}, "IsSubstitutionClass": true, "IsCanceled": true,
+        "NewDate": "2026-11-04", "NewLessonNo": "6"}],
+      []
+    ],
+    "2026-11-04": [
+      [{"LessonNo": "6", "HourFrom": "12:45", "HourTo": "13:30", "Subject": {"Id": 3}, "Teacher": {"Id": 10}, "IsSubstitutionClass": true, "IsCanceled": false,
+        "OrgDate": "2026-11-02", "OrgLessonNo": "4"}],
+      [{"LessonNo": "7", "HourFrom": "13:40", "HourTo": "14:25", "Subject": {"Id": 4}, "Teacher": {"Id": 11}},
+       {"LessonNo": "7", "HourFrom": "13:40", "HourTo": "14:25", "Subject": {"Id": 5}, "Teacher": {"Id": 12}}]
+    ],
+    "bad-date": [[{"LessonNo": "1"}]]
+  }
+}

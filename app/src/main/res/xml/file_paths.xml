@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Files shared through FileProvider: message attachments and diagnostic reports. -->
+<paths>
+    <files-path name="attachments" path="attachments/" />
+    <cache-path name="diagnostics" path="diagnostics/" />
+</paths>

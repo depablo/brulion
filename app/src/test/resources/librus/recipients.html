@@ -1,0 +1,36 @@
+<!-- Synergia getRecipients for "wychowawca"; anonymized. -->
+            <table class="message-recipients-detail">
+                <thead>
+                    <tr>
+                        <td>
+                            <input name="zaznacz_wszystkie" type="checkbox" onClick="
+                                if (document.getElementsByName('zaznacz_wszystkie')[0].checked) {
+                                    selectSwitchByName(true, 'DoKogo[]');
+                                } else {
+                                    selectSwitchByName(false, 'DoKogo[]');
+                                }"
+                                 checked="checked"                             />
+                        </td>
+                        <td>Wychowawca</td>
+                    </tr>
+                </thead>
+                <tbody>
+                                    <tr class="line0">
+                        <td>
+                            <input type="checkbox" id="check_1000001" value="1000001"
+                                name="DoKogo[]"
+                                onClick="document.getElementsByName('zaznacz_wszystkie')[0].zaznacz_wszystkie.checked = false;"
+                                 checked="checked"                             />
+                            <input type="hidden" name="DoKogo_hid[]" value="1000001">
+                        </td>
+                        <td>
+                            <label class="d-flex flex-align-center gap-1" for="check_1000001"><span>Kowalska Anna</span> </label>                        </td>
+                    </tr>
+                                    </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="2">&nbsp;</td>
+                    </tr>
+                </tfoot>
+            </table>
+            <script>refresh_tooltips();</script>

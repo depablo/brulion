@@ -1,0 +1,285 @@
+<!-- Synergia /wiadomosci/2/5, trimmed to the CSRF script and the form; anonymized. -->
+<script>
+            var csrfTokenName = "requestkey";
+            var csrfTokenValue = "TEST-CSRF-TOKEN";
+</script>
+<FORM ACTION="/wiadomosci" NAME="formWiadomosci" ID="formWiadomosci" enctype="multipart/form-data" METHOD="POST">    
+    <input 
+        type="hidden" 
+        name="requestkey" 
+        value="TEST-REQUEST-KEY" 
+    />
+
+                    <input type="hidden" name="filtrUzytkownikow" id="filtrUzytkownikow" value="0" />
+                <input type="hidden" name="idPojemnika" value="" />
+            <div class="container static">
+		<h2 class="inside"> Wiadomości </h2><div class="container-background">    <script language="JavaScript" type="text/javascript">
+        document.forms[0].action = "\/wiadomosci\/2\/5";
+    </script>
+    <script type="text/javascript">
+	var czyOdswiezacSesje=false;
+	window.setInterval('if(czyOdswiezacSesje){xajax_odswiezSesje(); czyOdswiezacSesje=false;}', 300000);	 
+  	</script><table class="stretch container-message"><tr><td class="message-recipients">
+        <script type="text/javascript">
+        /*
+        Function: sendFormWiadomosci
+
+        Function disable (readonly) element subject and content of message form and send form.selectSwitchByName
+
+        Author:
+		
+        */
+        function sendFormWiadomosci() {
+            lockNewMessageForm();
+            $('#formWiadomosci').trigger('submit');
+            return true;
+        }
+        </script>
+            <script type="text/javascript">
+    /*
+    Function: selectRecipients
+
+    Function retrieves recipients by type from the backend.
+
+    Parameters:
+         string recipeintType
+         boolean isVirtualClasses
+         boolean group
+         ?int classId
+
+    */
+        function selectRecipients(recipeintType, isVirtualClasses, group, classId)
+        {
+            if (isVirtualClasses == undefined) {
+                isVirtualClasses == false;
+            }
+
+            if (group == undefined) {
+                group == 0;
+            }
+
+            if (classId == undefined) {
+                classId == null;
+            }
+
+            $(".isVirtualSelect").prop("disabled", true);
+
+            if ($("#radio_uczen_klasami").prop("checked")) {
+                $("#uczen_klasami_radio").prop("disabled", false);
+            } else if ($("#radio_rodzic_klasami").prop("checked")) {
+                $("#rodzic_klasami_radio").prop("disabled", false);
+            }
+
+            if (($("#radio_sadmin").is(":checked"))) {
+                $("#checkHelp").show();
+            } else {
+                $("#checkHelp").hide();
+            }
+
+            setVisibleMessageTypeField();
+            $.ajax({
+                url: '/getRecipients',
+                data: {
+                    typAdresata: recipeintType,
+                    poprzednia: 5,
+                    tabZaznaczonych: '',
+                    czyWirtualneKlasy: isVirtualClasses,
+                    idGrupy : group,
+                    klasa_rada_rodzicow : classId,
+                    klasa_opiekunowie : classId,
+                    klasa_rodzice : classId
+                },
+                cache: false,
+                type: "POST",
+                success: function(html){
+                    $("#adresaci").html(html);
+                    $("#sendButton").button("enable");
+                }
+            });
+        };
+
+        /*
+        Function: setVisibleMessageTypeField
+
+        Method of handling visibility selecta "advise".
+        */
+        const setVisibleMessageTypeField = function()
+        {
+            const typeMessage = 0;
+            const typeNote = 1;
+            if (
+                $("#radio_rodzic_klasami").prop("checked")
+                || $("#radio_rodzic").prop("checked")
+                || $("#radio_opiekun").prop("checked")
+                || $("#radio_rodzic_klasami").prop("checked")
+                || $("#radio_opiekunowie_klasami").prop("checked")
+            ) {
+                $("#messageTypeRow").show();
+            } else {
+                $("#messageTypeRow").hide();
+                $("#listOfMessageTypes").val(typeMessage);
+            }
+        }
+    </script>
+
+        
+                <table class="message-recipients">
+                    <thead>
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>Adresat</td>
+                        </tr>
+                    </thead>
+                <tbody>
+            <tr>
+            <td>
+                <input type="radio" name="adresat" id="radio_wychowawca"  value="wychowawca" onClick='selectRecipients("wychowawca", false, 0 );'
+                    class="recipiantTypeRadio"
+                />
+            </td>
+            <td colspan="2">
+                <label for="radio_wychowawca">Wychowawcy</label>
+            </td>
+            </tr>
+        <tr>
+            <td>
+                <input type="radio" name="adresat" id="radio_rada_rodzicow"  value="rada_rodzicow" onClick='selectRecipients("rada_rodzicow", false, 0 , 40001);'
+                    class="recipiantTypeRadio"
+                />
+            </td>
+            <td colspan="2">
+                <label for="radio_rada_rodzicow">Rada klasowa rodzic&oacute;w</label>
+            </td>
+            </tr>
+        <tr>
+            <td>
+                <input type="radio" name="adresat" id="radio_szkolna_rada_rodzicow"  value="szkolna_rada_rodzicow" onClick='selectRecipients("szkolna_rada_rodzicow", false, 0 );'
+                    class="recipiantTypeRadio"
+                />
+            </td>
+            <td colspan="2">
+                <label for="radio_szkolna_rada_rodzicow">Szkolna rada rodzic&oacute;w</label>
+            </td>
+            </tr>
+        <tr>
+            <td>
+                <input type="radio" name="adresat" id="radio_nauczyciel"  value="nauczyciel" onClick='selectRecipients("nauczyciel", false, 0 );'
+                    class="recipiantTypeRadio"
+                />
+            </td>
+            <td colspan="2">
+                <label for="radio_nauczyciel">Nauczyciele</label>
+            </td>
+            </tr>
+        <tr>
+            <td>
+                <input type="radio" name="adresat" id="radio_admin"  value="admin" onClick='selectRecipients("admin", false, 0 );'
+                    class="recipiantTypeRadio"
+                />
+            </td>
+            <td colspan="2">
+                <label for="radio_admin">Administrator Szkoły</label>
+            </td>
+            </tr>
+        <tr>
+            <td>
+                <input type="radio" name="adresat" id="radio_grupa"  value="grupa" onClick='selectRecipients("grupa", false, 0 );'
+                    class="recipiantTypeRadio"
+                />
+            </td>
+            <td colspan="2">
+                <label for="radio_grupa">Grupa adresat&oacute;w</label>
+            </td>
+            </tr>
+        <tr>
+            <td>
+                <input type="radio" name="adresat" id="radio_sekretariat"  value="sekretariat" onClick='selectRecipients("sekretariat", false, 0 );'
+                    class="recipiantTypeRadio"
+                />
+            </td>
+            <td colspan="2">
+                <label for="radio_sekretariat">Sekretariat</label>
+            </td>
+            </tr>
+        <tr>
+            <td>
+                <input type="radio" name="adresat" id="radio_sadmin"  value="sadmin" onClick='selectRecipients("sadmin", false, 0 );'
+                    class="recipiantTypeRadio"
+                />
+            </td>
+            <td colspan="2">
+                <label for="radio_sadmin">Firma LIBRUS (SuperAdministrator) Pomoc Techniczna</label>
+            </td>
+            </tr>
+        
+                    </tbody>
+                </table>
+                            <div id="adresaci">&nbsp;</div>
+    <p style="padding-left: 4px;">
+        Wiadomość do specjalistów w szkole, np. pedagoga, psychologa<br/>
+        oraz innego specjalisty można wysłać za pomocą<br/>
+        <a href="/wiadomosci3">nowego systemu wiadomości</a> wybierając odpowiednią grupę odbiorców.
+    </p>
+    <script type="text/javascript">
+    var latestServerQuery = '';
+    var inProgress = false;
+    var nextServerQuery = '';
+        function requestSearchLoop() {
+            if (!($("#radio_sadmin").is(":checked"))) {
+                return;
+            }
+
+            var query = $("#temat").val();
+            if (!inProgress && (query.length > 2) && (query != latestServerQuery)) {
+                if (query != '' && nextServerQuery != '') {
+                    query = nextServerQuery;
+                    nextServerQuery = '';
+                }
+
+                inProgress = true;
+                if ($('#checkHelp').html() == '') {
+                    $('#checkHelp').html('<td></td><td><img src="/images/ajax-loader.gif" alt="Wyszukiwanie pomocy na wpisany temat" title="Wyszukiwanie pomocy na wpisany temat" /></td>');
+                }
+
+                $.post("\/wiadomosci\/2\/5", {"checkHelp":query}, function(data) {
+                    $('#checkHelp').html(data);
+                    inProgress = false;
+                });
+                latestServerQuery = query;
+            }
+        }
+        </script>
+                
+		</td>
+		<td>
+		<table class="stretch message">
+			<tr><td class="right label low">&nbsp;</td><td class="left low"><span><b>Nowa wiadomość</b></span></td></tr>            <input type="hidden" name="Rodzaj" value="0" />
+            		<tr>
+            <td class="right label low">Temat</td>
+            <td class="left low">
+                <input type="text"
+                       name="temat"
+                       id="temat"
+                       TABINDEX="2"
+                       class="stretch"
+                       onkeyup="requestSearchLoop()"
+
+
+></td></tr><tr><td></td><td id="checkHelp"></td></tr><tr><td class="right label high">Treść</td>
+			 <td class="left high"><TEXTAREA NAME="tresc" TABINDEX="3" id="tresc_wiadomosci" CLASS="stretch"  onKeyUp="if(!czyOdswiezacSesje) {czyOdswiezacSesje=true;} "  ></TEXTAREA> </td></tr><tr><td class="right label low">&nbsp;</td><td class="right low">
+        <input type="HIDDEN" name="poprzednia" value="5">            <input type="hidden" name="fileStorageIdentifier" id="fileStorageUniqueId" value=""/>
+        <p class="clear fileListLabel hidden"><b>Pliki:<br/></p>
+        <div class="fileList"></div>
+        <p class="clear"></p>
+                    <script type="text/javascript">
+                        var CLOUD_STORAGE_SERVICE_NAME = "";
+            var CURRENT_USER_IS_SCHOOL_ADMIN = false;
+        </script>
+        <script type="text/javascript" src="/js/EventDispatcher.1458427072.js"></script><script type="text/javascript" src="/js/FileUploader/FileUploader.1565269166.js"></script><script type="text/javascript" src="/js/FileUploader/SKFFileUploaderFactory.1565269166.js"></script><script type="text/javascript" src="/js/FileUploader/SKFFileListView.1458427072.js"></script><script type="text/javascript" src="/js/FileUploader/FileListCtrl.1458427072.js"></script><script type="text/javascript" src="/js/FileUploader/FileListCtrlProxy.1458427072.js"></script><script type="text/javascript" src="/js/FileUploader/SKFFileSelectViewForCloudStorage.1585948224.js"></script><script type="text/javascript" src="/js/FileUploader/SKFFileSelectViewForLibrusDrive.1585948224.js"></script><script type="text/javascript" src="/js/FileUploader/FileSelectCtrl.1458427072.js"></script><script type="text/javascript" src="/js/FileUploader/FileListFactory.1458427072.js"></script><script type="text/javascript" src="/js/FileUploader/StorageStatusMonitor.1458427072.js"></script><script type="text/javascript" src="/js/fileValidator.1535145151.js"></script><script type="text/javascript" src="/js/CloudStorageBrowseTool.1507325373.js"></script><script type="text/javascript" src="/js/IconProvider.1458427072.js"></script><script type="text/javascript" src="/js/wiadomosci_pliki.1585948224.js"></script>        <script type="text/javascript" src="/js/wiadomosci.1495831305.js"></script><script type="text/javascript" src="/js/working_hours.1786741639.js"></script><script>
+                        var message = null
+                        var showWorkHoursDetials = false
+                      </script> <br />
+            <INPUT TYPE="submit" VALUE="Wyślij" NAME="wyslij" TABINDEX="5" id="sendButton"
+                class="medium"  disabled="disabled"  
+                OnClick="return wyslij_wiadomosc(this, 150, 20000, '/wiadomosci/5', message, showWorkHoursDetials)"
+            /> <INPUT TYPE="submit" VALUE="Anuluj"  NAME="anuluj_wysylanie" TABINDEX="6" CLASS="medium" OnClick="blockingDueUploadingDisabled = true; document.forms[0].action='/wiadomosci/5'" ></td></tr></table></td></tr></table></div></div></form>
