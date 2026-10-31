@@ -41,6 +41,12 @@ interface ProfileDao {
     @Query("UPDATE profiles SET lastSyncAt = :time WHERE id = :id")
     suspend fun setLastSyncAt(id: Long, time: Long)
 
+    @Query("UPDATE profiles SET markedReadAt = :time")
+    suspend fun markAllRead(time: Long)
+
+    @Query("UPDATE profiles SET markedReadAt = :time WHERE id = :id")
+    suspend fun setMarkedReadAt(id: Long, time: Long)
+
     @Query("DELETE FROM profiles WHERE id = :id")
     suspend fun delete(id: Long)
 }

@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.CalendarViewWeek
+import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.DynamicFeed
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.ManageAccounts
@@ -46,6 +47,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import pl.brulion.R
 import pl.brulion.data.db.FeedKind
 import pl.brulion.data.db.ProfileEntity
@@ -92,6 +95,8 @@ fun MainScreen(viewModel: MainViewModel, onOpen: (MoreDestination) -> Unit, onOp
     val syncStates by viewModel.syncStates.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(MainTab.TODAY) }
     val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val resources = LocalResources.current
     val current = profile
     val syncState = current?.let { syncStates[it.id] }
 
@@ -124,6 +129,19 @@ fun MainScreen(viewModel: MainViewModel, onOpen: (MoreDestination) -> Unit, onOp
                     if (current != null) ProfileSwitcher(current, profiles, viewModel::select) { onOpen(MoreDestination.ACCOUNTS) }
                 },
                 actions = {
+                    IconButton(onClick = {
+                        scope.launch {
+                            val undo = viewModel.markAllRead()
+                            val result = snackbar.showSnackbar(
+                                resources.getString(R.string.mark_all_read_done),
+                                actionLabel = resources.getString(R.string.undo),
+                                withDismissAction = true,
+                            )
+                            if (result == SnackbarResult.ActionPerformed) undo()
+                        }
+                    }) {
+                        Icon(Icons.Outlined.DoneAll, stringResource(R.string.mark_all_read))
+                    }
                     IconButton(onClick = { onOpen(MoreDestination.MORE) }) {
                         Icon(Icons.Outlined.Menu, stringResource(R.string.tab_more))
                     }

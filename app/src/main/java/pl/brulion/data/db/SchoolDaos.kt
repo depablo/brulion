@@ -197,7 +197,8 @@ interface MessageDao {
         """
         SELECT m.*,
             (SELECT MAX(b.receiversCount) FROM message_bodies b WHERE b.messageId = m.id) AS receiversCount,
-            (SELECT group_concat(o.profileId) FROM messages o WHERE o.id = m.id AND o.profileId != m.profileId) AS otherProfileIds
+            (SELECT group_concat(o.profileId) FROM messages o WHERE o.id = m.id AND o.profileId != m.profileId) AS otherProfileIds,
+            (SELECT p.markedReadAt > 0 AND m.firstSeenAt <= p.markedReadAt FROM profiles p WHERE p.id = m.profileId) AS markedRead
         FROM messages m WHERE m.profileId = :profileId ORDER BY m.sentAt DESC
         """
     )
@@ -207,7 +208,8 @@ interface MessageDao {
         """
         SELECT m.*,
             (SELECT MAX(b.receiversCount) FROM message_bodies b WHERE b.messageId = m.id) AS receiversCount,
-            (SELECT group_concat(o.profileId) FROM messages o WHERE o.id = m.id AND o.profileId != m.profileId) AS otherProfileIds
+            (SELECT group_concat(o.profileId) FROM messages o WHERE o.id = m.id AND o.profileId != m.profileId) AS otherProfileIds,
+            (SELECT p.markedReadAt > 0 AND m.firstSeenAt <= p.markedReadAt FROM profiles p WHERE p.id = m.profileId) AS markedRead
         FROM messages m WHERE m.profileId = :profileId AND m.id = :id
         """
     )
@@ -216,10 +218,10 @@ interface MessageDao {
     @Query("SELECT messageId FROM message_bodies WHERE profileId = :profileId AND receiversCount IS NOT NULL")
     suspend fun idsWithReceivers(profileId: Long): List<Long>
 
-    @Query("SELECT * FROM messages WHERE profileId = :profileId AND readAt IS NULL ORDER BY sentAt DESC")
+    @Query("SELECT * FROM messages WHERE profileId = :profileId AND readAt IS NULL AND NOT EXISTS (SELECT 1 FROM profiles p WHERE p.id = :profileId AND p.markedReadAt > 0 AND messages.firstSeenAt <= p.markedReadAt) ORDER BY sentAt DESC")
     fun observeUnread(profileId: Long): Flow<List<MessageEntity>>
 
-    @Query("SELECT COUNT(*) FROM messages WHERE profileId = :profileId AND readAt IS NULL")
+    @Query("SELECT COUNT(*) FROM messages WHERE profileId = :profileId AND readAt IS NULL AND NOT EXISTS (SELECT 1 FROM profiles p WHERE p.id = :profileId AND p.markedReadAt > 0 AND messages.firstSeenAt <= p.markedReadAt)")
     fun observeUnreadCount(profileId: Long): Flow<Int>
 
     @Query("SELECT * FROM messages WHERE profileId = :profileId AND id = :id")
@@ -362,7 +364,11 @@ data class InboxMessage(
     val receiversCount: Int?,
     /** Comma-separated ids of the user's other profiles that got the same message. */
     val otherProfileIds: String?,
+    /** Unread in Librus, but first seen before "mark everything as read" in Brulion. */
+    val markedRead: Boolean = false,
 ) {
+    val unread: Boolean get() = message.readAt == null && !markedRead
+
     val alsoIn: List<Long> get() = otherProfileIds?.split(',')?.mapNotNull { it.trim().toLongOrNull() }.orEmpty()
     val audience: MessageAudience get() = MessageAudience.of(receiversCount, alsoIn.isNotEmpty())
 }

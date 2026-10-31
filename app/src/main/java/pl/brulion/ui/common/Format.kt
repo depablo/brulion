@@ -1,5 +1,7 @@
 package pl.brulion.ui.common
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -46,6 +48,15 @@ fun Double.formatAverage(): String = String.format(Polish, "%.2f", this)
 /** Weight without a needless ".0". */
 fun Double.formatWeight(): String = if (this % 1.0 == 0.0) toInt().toString() else toString()
 
-/** Seen for the first time within the last day (and not part of the initial import). */
-fun isFresh(firstSeenAt: Long, nowSeconds: Long = System.currentTimeMillis() / 1000): Boolean =
-    firstSeenAt > 0 && nowSeconds - firstSeenAt < 24 * 60 * 60
+/**
+ * Seen for the first time within the last day (and not part of the initial import), and not
+ * before the user marked everything as read at [markedReadAt].
+ */
+fun isFreshAt(firstSeenAt: Long, nowSeconds: Long = System.currentTimeMillis() / 1000, markedReadAt: Long = 0): Boolean =
+    firstSeenAt > 0 && firstSeenAt > markedReadAt && nowSeconds - firstSeenAt < 24 * 60 * 60
+
+/** When the shown student's things were last marked as read; see [pl.brulion.data.db.ProfileEntity.markedReadAt]. */
+val LocalMarkedReadAt = compositionLocalOf { 0L }
+
+@Composable
+fun isFresh(firstSeenAt: Long): Boolean = isFreshAt(firstSeenAt, markedReadAt = LocalMarkedReadAt.current)

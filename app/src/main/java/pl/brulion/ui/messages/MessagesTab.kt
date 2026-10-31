@@ -97,7 +97,7 @@ fun MessagesTab(profileId: Long, onOpen: (messageId: Long) -> Unit, onCompose: (
 @Composable
 fun MessageRow(item: InboxMessage, profiles: List<ProfileEntity>, modifier: Modifier = Modifier) {
     val message = item.message
-    val unread = message.readAt == null
+    val unread = item.unread
     Row(modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.Top) {
         NameAvatar(message.senderName, size = 40.dp)
         Spacer(Modifier.width(12.dp))

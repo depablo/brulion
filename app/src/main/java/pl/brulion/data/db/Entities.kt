@@ -38,4 +38,9 @@ data class ProfileEntity(
     val apiTokenExpiresAt: Long = 0,
     /** Epoch seconds of the last sync that fetched anything; 0 = never synced. */
     @ColumnInfo(defaultValue = "0") val lastSyncAt: Long = 0,
+    /**
+     * Epoch seconds of "mark everything as read": things first seen before it lose their "new"
+     * marker in Brulion. Librus isn't told, so the messages stay unread there.
+     */
+    @ColumnInfo(defaultValue = "0") val markedReadAt: Long = 0,
 )

@@ -38,4 +38,15 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
     fun refresh() {
         current.value?.let { container.sync.sync(it.id) }
     }
+
+    /**
+     * Clears Brulion's "new" markers and unread messages for every student; Librus isn't told.
+     * Returns an undo.
+     */
+    suspend fun markAllRead(): suspend () -> Unit {
+        val dao = container.database.profileDao()
+        val before = container.accounts.allProfiles.first().associate { it.id to it.markedReadAt }
+        dao.markAllRead(System.currentTimeMillis() / 1000)
+        return { before.forEach { (id, time) -> dao.setMarkedReadAt(id, time) } }
+    }
 }

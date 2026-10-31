@@ -17,6 +17,9 @@
     <string name="retry">Spróbuj ponownie</string>
     <string name="ok">OK</string>
     <string name="cancel">Anuluj</string>
+    <string name="undo">Cofnij</string>
+    <string name="mark_all_read">Oznacz wszystko jako przeczytane</string>
+    <string name="mark_all_read_done">Oznaczono jako przeczytane (tylko w Brulionie)</string>
     <string name="search_clear">Wyczyść</string>
     <string name="search_nothing">Nic nie znaleziono</string>
     <string name="messages_search">Szukaj w wiadomościach</string>
