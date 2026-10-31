@@ -29,6 +29,40 @@ fun nextLessonDay(
         day > today || (day == today && dayLessons.any { it.endTime == null || it.endTime > now })
     }?.toPair()
 
+/** A day picked by stepping through the days with lessons, and whether there's more either way. */
+data class SteppedDay(
+    val day: LocalDate,
+    val lessons: List<TimetableLessonEntity>,
+    val step: Int,
+    val hasPrevious: Boolean,
+    val hasNext: Boolean,
+)
+
+/**
+ * The day [step] lesson days away from [nextLessonDay] (negative goes back); the step is clamped
+ * to the days in [lessons]. Null when there are no lessons at all.
+ */
+fun steppedLessonDay(
+    lessons: List<TimetableLessonEntity>,
+    step: Int,
+    today: LocalDate = schoolToday(),
+    now: String = schoolTimeNow(),
+): SteppedDay? {
+    val days = lessons.groupBy { it.date }.toSortedMap().entries.toList()
+    if (days.isEmpty()) return null
+    // With nothing ahead, the default is the last known day, so stepping back still works.
+    val start = nextLessonDay(lessons, today, now)?.let { (day, _) -> days.indexOfFirst { it.key == day } }
+        ?: days.lastIndex
+    val index = (start + step).coerceIn(0, days.lastIndex)
+    return SteppedDay(
+        day = days[index].key,
+        lessons = days[index].value,
+        step = index - start,
+        hasPrevious = index > 0,
+        hasNext = index < days.lastIndex,
+    )
+}
+
 /** First start and last end of the lessons that take place; null when none do. */
 fun schoolHours(dayLessons: List<TimetableLessonEntity>): Pair<String, String>? {
     val held = dayLessons.filter { it.state != LessonState.CANCELLED && it.state != LessonState.MOVED_AWAY }

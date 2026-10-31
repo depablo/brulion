@@ -221,6 +221,9 @@
     <string name="widget_config_follow_app">Jak w aplikacji</string>
     <string name="widget_config_follow_app_description">Uczeń wybrany w Brulionie</string>
     <string name="widget_no_profile">Zaloguj się w aplikacji</string>
+    <string name="widget_previous_day">Poprzedni dzień</string>
+    <string name="widget_next_day">Następny dzień</string>
+    <string name="widget_yesterday">Wczoraj</string>
 
     <string name="error_network">Brak połączenia z Librusem. Sprawdź internet.</string>
     <string name="error_reauth">Sesja wygasła. Zaloguj się ponownie.</string>

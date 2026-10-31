@@ -18,14 +18,15 @@ import pl.brulion.R
 import pl.brulion.data.db.LessonState
 import pl.brulion.data.school.TIMETABLE_WEEKS
 import pl.brulion.data.school.eventsByLesson
-import pl.brulion.data.school.nextLessonDay
+import pl.brulion.data.school.steppedLessonDay
 import pl.brulion.librus.schoolToday
 import pl.brulion.ui.MainActivity
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * Home and lock screen widget with the lessons for today or the next school day. Each widget
+ * Home and lock screen widget with the lessons for today or the next school day; arrows step
+ * to the previous or next day with lessons. Each widget
  * shows the student chosen in [TimetableWidgetConfigActivity], or the one selected in the app.
  */
 class TimetableWidget : AppWidgetProvider() {
@@ -42,12 +43,32 @@ class TimetableWidget : AppWidgetProvider() {
     }
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
-        appWidgetIds.forEach { setProfile(context, it, null) }
+        appWidgetIds.forEach {
+            setProfile(context, it, null)
+            prefs(context).edit().remove("step_$it").remove("step_day_$it").apply()
+        }
+    }
+
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != ACTION_STEP) return super.onReceive(context, intent)
+        val appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
+        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return
+        setStep(context, appWidgetId, stepOf(context, appWidgetId) + intent.getIntExtra(EXTRA_DELTA, 0))
+        val pending = goAsync()
+        scope.launch {
+            try {
+                AppWidgetManager.getInstance(context).updateAppWidget(appWidgetId, render(context, appWidgetId))
+            } finally {
+                pending.finish()
+            }
+        }
     }
 
     companion object {
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         private const val MAX_ROWS = 9
+        private const val ACTION_STEP = "pl.brulion.widget.STEP"
+        private const val EXTRA_DELTA = "delta"
         private val DayFormat = DateTimeFormatter.ofPattern("EEEE, d.MM", Locale.forLanguageTag("pl-PL"))
 
         /** Refreshes every placed widget, e.g. after a sync or switching the student. */
@@ -74,6 +95,30 @@ class TimetableWidget : AppWidgetProvider() {
             }.apply()
         }
 
+        /** Lesson days the widget was stepped away from the default; it goes back to 0 the next day. */
+        private fun stepOf(context: Context, appWidgetId: Int): Int {
+            val prefs = prefs(context)
+            if (prefs.getLong("step_day_$appWidgetId", Long.MIN_VALUE) != schoolToday().toEpochDay()) return 0
+            return prefs.getInt("step_$appWidgetId", 0)
+        }
+
+        private fun setStep(context: Context, appWidgetId: Int, step: Int) {
+            prefs(context).edit()
+                .putInt("step_$appWidgetId", step)
+                .putLong("step_day_$appWidgetId", schoolToday().toEpochDay())
+                .apply()
+        }
+
+        private fun stepIntent(context: Context, appWidgetId: Int, delta: Int): PendingIntent {
+            val intent = Intent(context, TimetableWidget::class.java)
+                .setAction(ACTION_STEP)
+                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                .putExtra(EXTRA_DELTA, delta)
+            // One request code per widget and direction, so the intents don't replace each other.
+            val requestCode = appWidgetId * 2 + if (delta > 0) 1 else 0
+            return PendingIntent.getBroadcast(context, requestCode, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        }
+
         private suspend fun render(context: Context, appWidgetId: Int): RemoteViews {
             val container = (context.applicationContext as BrulionApp).container
             val views = RemoteViews(context.packageName, R.layout.widget_timetable)
@@ -97,15 +142,25 @@ class TimetableWidget : AppWidgetProvider() {
                 return views.showEmpty(context.getString(R.string.widget_no_profile))
             }
             val today = schoolToday()
+            // A week back too, so the arrows can reach the earlier days of this week.
             val lessons = container.database.timetableDao()
-                .observeRange(profile.id, today, today.plusWeeks(TIMETABLE_WEEKS)).first()
-            val (day, dayLessons) = nextLessonDay(lessons, today)
+                .observeRange(profile.id, today.minusWeeks(1), today.plusWeeks(TIMETABLE_WEEKS)).first()
+            val stepped = steppedLessonDay(lessons, stepOf(context, appWidgetId), today)
                 ?: return views.apply { setTextViewText(R.id.widget_title, context.getString(R.string.widget_timetable_name)) }
                     .showEmpty(context.getString(R.string.timetable_empty))
+            // Remember the clamped step, so arrows at the edge don't pile up hidden steps.
+            setStep(context, appWidgetId, stepped.step)
+            val day = stepped.day
+            val dayLessons = stepped.lessons
+            views.setViewVisibility(R.id.widget_prev, if (stepped.hasPrevious) View.VISIBLE else View.INVISIBLE)
+            views.setViewVisibility(R.id.widget_next, if (stepped.hasNext) View.VISIBLE else View.INVISIBLE)
+            views.setOnClickPendingIntent(R.id.widget_prev, stepIntent(context, appWidgetId, -1))
+            views.setOnClickPendingIntent(R.id.widget_next, stepIntent(context, appWidgetId, 1))
 
             val dayLabel = when (day) {
                 today -> context.getString(R.string.tab_today)
                 today.plusDays(1) -> context.getString(R.string.widget_tomorrow)
+                today.minusDays(1) -> context.getString(R.string.widget_yesterday)
                 else -> day.format(DayFormat).replaceFirstChar { it.uppercase() }
             }
             // No name: the widget may sit on the lock screen, visible to anyone.
