@@ -11,6 +11,16 @@ class MessageAudienceTest {
     }
 
     @Test
+    fun groupSizeBands() {
+        assertEquals(MessageAudience.GroupSize.Few, MessageAudience.Group(2).size)
+        assertEquals(MessageAudience.GroupSize.Few, MessageAudience.Group(9).size)
+        assertEquals(MessageAudience.GroupSize.Class, MessageAudience.Group(10).size)
+        assertEquals(MessageAudience.GroupSize.Class, MessageAudience.Group(39).size)
+        assertEquals(MessageAudience.GroupSize.Many, MessageAudience.Group(40).size)
+        assertEquals(MessageAudience.GroupSize.Many, MessageAudience.Group(212).size)
+    }
+
+    @Test
     fun otherInboxesHintWithoutCount() {
         assertEquals(MessageAudience.Several, MessageAudience.of(null, inOtherInboxes = true))
         assertEquals(MessageAudience.Unknown, MessageAudience.of(null, inOtherInboxes = false))

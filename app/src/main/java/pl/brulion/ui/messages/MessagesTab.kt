@@ -156,7 +156,7 @@ fun MessageRow(item: InboxMessage, profiles: List<ProfileEntity>, modifier: Modi
     }
 }
 
-/** Short hint next to the date: written to me only, or to how many people. */
+/** Short hint next to the date: written to me only, or roughly to how many people. */
 @Composable
 private fun AudienceBadge(audience: MessageAudience) {
     val icon = when (audience) {
@@ -169,7 +169,11 @@ private fun AudienceBadge(audience: MessageAudience) {
         Icon(icon, contentDescription = audienceText(audience), modifier = Modifier.size(14.dp), tint = color)
         val label = when (audience) {
             MessageAudience.Direct -> stringResource(R.string.audience_direct_short)
-            is MessageAudience.Group -> audience.count.toString()
+            is MessageAudience.Group -> when (audience.size) {
+                MessageAudience.GroupSize.Few -> stringResource(R.string.audience_few_short)
+                MessageAudience.GroupSize.Class -> stringResource(R.string.audience_class_short)
+                MessageAudience.GroupSize.Many -> stringResource(R.string.audience_many_short)
+            }
             else -> null
         }
         if (label != null) {

@@ -121,6 +121,9 @@
     <string name="messages_attachment">Załącznik</string>
     <string name="messages_also_in">Też u: %1$s</string>
     <string name="audience_direct_short">do Ciebie</string>
+    <string name="audience_few_short">do kilku osób</string>
+    <string name="audience_class_short">do klasy</string>
+    <string name="audience_many_short">do wielu</string>
     <string name="audience_direct">Tylko do Ciebie</string>
     <string name="audience_group">Do %1$d osób</string>
     <string name="audience_several">Do wielu osób (trafiła też do innych Twoich kont)</string>
