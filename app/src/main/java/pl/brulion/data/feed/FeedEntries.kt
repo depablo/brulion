@@ -15,7 +15,9 @@ import pl.brulion.data.db.NoteEntity
 import pl.brulion.data.db.NotePolarity
 import pl.brulion.data.db.ProfileEntity
 import pl.brulion.data.db.TimetableLessonEntity
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.IsoFields
 
 // Builders for feed lines. The text is final Polish copy, so the feed reads like a diary:
 // "Nowa ocena: Matematyka – 5", "Sprawdzian – Biologia, 3.11".
@@ -128,4 +130,48 @@ internal fun TimetableLessonEntity.toFeed(profile: ProfileEntity, noticedAt: Lon
         detail = if (state == LessonState.SUBSTITUTION) teacherName?.let { "Prowadzi: $it" } else null,
         date = date,
     )
+}
+
+/** An absence still unexcused this many days later is worth a reminder... */
+internal const val ABSENCE_REMINDER_AFTER_DAYS = 7L
+/** ...but not forever: older ones are probably past the school's deadline. */
+internal const val ABSENCE_REMINDER_UNTIL_DAYS = 30L
+
+/**
+ * One reminder per child and week about the absences still not excused, or null when there are
+ * none. Brulion can't excuse them, so the entry says where it's done. The week in [refKey]
+ * keeps repeated syncs from adding it again.
+ */
+internal fun absenceReminder(profile: ProfileEntity, attendance: List<AttendanceEntity>, today: LocalDate, now: Long): FeedEntryEntity? {
+    val absences = attendance.filter {
+        it.category == AttendanceCategory.ABSENT &&
+            it.date <= today.minusDays(ABSENCE_REMINDER_AFTER_DAYS) &&
+            it.date >= today.minusDays(ABSENCE_REMINDER_UNTIL_DAYS)
+    }
+    if (absences.isEmpty()) return null
+    val days = absences.groupBy { it.date }.toSortedMap().map { (date, lessons) ->
+        val subjects = lessons.sortedBy { it.lessonNo }.mapNotNull { it.subjectName }.distinct()
+        val what = if (lessons.size <= 2 && subjects.isNotEmpty()) subjects.joinToString(", ") else lessonsCount(lessons.size)
+        "${date.format(ShortDate)} ($what)"
+    }
+    val week = "%d-W%02d".format(today.get(IsoFields.WEEK_BASED_YEAR), today.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR))
+    return FeedEntryEntity(
+        profileId = profile.id,
+        childKey = childKey(profile),
+        kind = FeedKind.ABSENCE_REMINDER,
+        refKey = week,
+        occurredAt = now,
+        title = "Do usprawiedliwienia: ${lessonsCount(absences.size)}",
+        detail = "Usprawiedliwić można w module e-usprawiedliwienia na librus.pl.\n" + days.joinToString(", "),
+    )
+}
+
+/** "1 lekcja", "3 lekcje", "5 lekcji", "22 lekcje". */
+internal fun lessonsCount(n: Int): String {
+    val word = when {
+        n == 1 -> "lekcja"
+        n % 10 in 2..4 && n % 100 !in 12..14 -> "lekcje"
+        else -> "lekcji"
+    }
+    return "$n $word"
 }

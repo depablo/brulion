@@ -18,9 +18,14 @@ import java.time.LocalDate
  * Adds recent records of a profile to the feed after a sync. Anything from the last two weeks
  * qualifies, so the very first sync already fills the feed; the unique index keeps entries
  * that were logged before from being added again. Lesson changes are the exception: they
- * follow the current timetable.
+ * follow the current timetable. A weekly reminder about unexcused absences is added here too.
  */
-class FeedRecorder(private val db: BrulionDatabase, private val announcements: Announcements) {
+class FeedRecorder(
+    private val db: BrulionDatabase,
+    private val announcements: Announcements,
+    /** Called once per new weekly reminder about unexcused absences. */
+    private val onAbsenceReminder: (ProfileEntity, FeedEntryEntity) -> Unit = { _, _ -> },
+) {
 
     suspend fun record(profile: ProfileEntity) {
         val now = nowSeconds()
@@ -53,6 +58,11 @@ class FeedRecorder(private val db: BrulionDatabase, private val announcements: A
             }
         }
         db.feedDao().deleteOlderThan(now - RETENTION_SECONDS)
+
+        val attendance = db.attendanceDao().from(id, today.minusDays(ABSENCE_REMINDER_UNTIL_DAYS))
+        absenceReminder(profile, attendance, today, now)?.let { reminder ->
+            if (db.feedDao().insert(reminder) > 0) onAbsenceReminder(profile, reminder)
+        }
     }
 
     private fun LocalDate.noonEpoch(): Long = atTime(12, 0).atZone(SCHOOL_ZONE).toEpochSecond()

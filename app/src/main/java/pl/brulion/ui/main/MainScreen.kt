@@ -194,7 +194,7 @@ fun MainScreen(viewModel: MainViewModel, onOpen: (MoreDestination) -> Unit, onOp
                         FeedKind.EVENT -> onOpen(MoreDestination.EVENTS)
                         FeedKind.ANNOUNCEMENT -> onOpen(MoreDestination.ANNOUNCEMENTS)
                         FeedKind.NOTE -> onOpen(MoreDestination.NOTES)
-                        FeedKind.ATTENDANCE -> onOpen(MoreDestination.ATTENDANCE)
+                        FeedKind.ATTENDANCE, FeedKind.ABSENCE_REMINDER -> onOpen(MoreDestination.ATTENDANCE)
                     }
                 }
             }

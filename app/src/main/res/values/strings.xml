@@ -198,6 +198,9 @@
     <string name="instant_channel">Nowości na bieżąco</string>
     <string name="instant_channel_description">Nowe oceny, uwagi, zmiany w planie i inne, zaraz po synchronizacji</string>
     <string name="instant_title">%1$s: %2$d nowości</string>
+    <string name="absence_channel">Nieobecności do usprawiedliwienia</string>
+    <string name="absence_channel_description">Raz w tygodniu, gdy nieobecność sprzed tygodnia nadal nie jest usprawiedliwiona</string>
+    <string name="absence_open_librus">Otwórz Librusa</string>
     <string name="settings_summary_quiet">Także w spokojne dni</string>
     <string name="settings_summary_quiet_description">Wysyłaj podsumowanie, nawet gdy nic nowego się nie wydarzyło. Problemy z pobraniem danych są zgłaszane zawsze.</string>
     <string name="settings_instant">Powiadomienia na bieżąco</string>

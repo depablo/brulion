@@ -72,6 +72,9 @@ interface AttendanceDao {
     @Query("SELECT * FROM attendance WHERE profileId = :profileId AND addedAt >= :since")
     suspend fun addedSince(profileId: Long, since: Long): List<AttendanceEntity>
 
+    @Query("SELECT * FROM attendance WHERE profileId = :profileId AND date >= :from")
+    suspend fun from(profileId: Long, from: LocalDate): List<AttendanceEntity>
+
     @Query("SELECT * FROM attendance WHERE profileId = :profileId AND firstSeenAt > :since")
     suspend fun seenAfter(profileId: Long, since: Long): List<AttendanceEntity>
 
@@ -293,6 +296,10 @@ interface FeedDao {
     /** Entries already logged are ignored thanks to the unique (childKey, kind, refKey) index. */
     @Insert(onConflict = androidx.room.OnConflictStrategy.IGNORE)
     suspend fun insertAll(entries: List<FeedEntryEntity>)
+
+    /** The new row id, or -1 when the entry was logged before. */
+    @Insert(onConflict = androidx.room.OnConflictStrategy.IGNORE)
+    suspend fun insert(entry: FeedEntryEntity): Long
 
     @Query("SELECT * FROM feed ORDER BY occurredAt DESC, id DESC LIMIT :limit")
     fun observeRecent(limit: Int = 500): Flow<List<FeedEntryEntity>>

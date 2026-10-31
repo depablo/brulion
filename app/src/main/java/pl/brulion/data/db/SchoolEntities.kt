@@ -243,7 +243,8 @@ data class MessageAttachmentEntity(
     val fileName: String,
 )
 
-enum class FeedKind { GRADE, NOTE, ATTENDANCE, EVENT, ANNOUNCEMENT, MESSAGE, LESSON_CHANGE }
+/** Stored by name; [ABSENCE_REMINDER] is written by Brulion itself, not taken from Librus. */
+enum class FeedKind { GRADE, NOTE, ATTENDANCE, EVENT, ANNOUNCEMENT, MESSAGE, LESSON_CHANGE, ABSENCE_REMINDER }
 
 /**
  * One line of the activity feed. Written during sync and never replaced by it, so the feed

@@ -15,6 +15,7 @@ import pl.brulion.data.Downloads
 import pl.brulion.data.MessageSessions
 import pl.brulion.data.MessagesRepository
 import pl.brulion.data.calendar.CalendarExport
+import pl.brulion.data.feed.AbsenceNotifier
 import pl.brulion.data.feed.InstantNotifier
 import pl.brulion.data.migrateChildKeys
 import pl.brulion.data.Settings
@@ -44,7 +45,8 @@ class AppContainer(context: Context) {
     private val messageSessions = MessageSessions(accounts, librusApi, LibrusMessages(http))
     val settings = Settings(context)
     val announcements = Announcements(database, settings)
-    private val feedRecorder = FeedRecorder(database, announcements)
+    private val absenceNotifier = AbsenceNotifier(context)
+    private val feedRecorder = FeedRecorder(database, announcements, onAbsenceReminder = absenceNotifier::show)
     val calendarExport = CalendarExport(context, database, accounts, settings, diagnostics)
     val instantNotifier = InstantNotifier(context, database, accounts, announcements, settings)
     val sync = SyncController(
