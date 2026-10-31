@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import pl.brulion.BrulionApp
 import pl.brulion.R
+import pl.brulion.data.childKey
 import pl.brulion.data.db.ProfileEntity
 import pl.brulion.ui.common.NameAvatar
 import pl.brulion.ui.theme.BrulionTheme
@@ -52,13 +53,13 @@ class TimetableWidgetConfigActivity : ComponentActivity() {
         enableEdgeToEdge()
         val container = (application as BrulionApp).container
         lifecycleScope.launch {
-            val profiles = container.accounts.allProfiles.first()
+            val current = TimetableWidget.profileOf(this@TimetableWidgetConfigActivity, appWidgetId)
+            val profiles = onePerChild(container.accounts.allProfiles.first(), current)
             // Nothing to choose from: follow the app.
             if (profiles.size <= 1) {
                 choose(null)
                 return@launch
             }
-            val current = TimetableWidget.profileOf(this@TimetableWidgetConfigActivity, appWidgetId)
             setContent {
                 BrulionTheme {
                     ProfilePicker(profiles, current, ::choose)
@@ -74,6 +75,13 @@ class TimetableWidgetConfigActivity : ComponentActivity() {
         finish()
     }
 }
+
+/**
+ * A child seen through a parent and a student account has the same timetable, so it's listed
+ * once; the widget's current profile wins, so its check mark stays.
+ */
+internal fun onePerChild(profiles: List<ProfileEntity>, current: Long?): List<ProfileEntity> =
+    profiles.groupBy { childKey(it) }.values.map { same -> same.find { it.id == current } ?: same.first() }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
