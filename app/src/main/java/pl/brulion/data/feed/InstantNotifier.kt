@@ -7,7 +7,11 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Typeface
 import android.os.Build
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.StyleSpan
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -61,11 +65,11 @@ class InstantNotifier(
         val profiles = accounts.allProfiles.first()
         for ((child, entries) in shown.groupBy { it.childKey }) {
             val profile = profiles.firstOrNull { childKey(it) == child } ?: continue
-            show(child, profile.id, profile.studentName.substringBefore(' '), entries)
+            show(child, profile.id, profile.studentName.substringBefore(' '), entries, parent = profile.isParent)
         }
     }
 
-    private fun show(child: String, profileId: Long, name: String, entries: List<FeedEntryEntity>) {
+    private fun show(child: String, profileId: Long, name: String, entries: List<FeedEntryEntity>, parent: Boolean) {
         createChannel()
         val intent = Intent(context, MainActivity::class.java)
             .putExtra(MainActivity.EXTRA_PROFILE_ID, profileId)
@@ -76,11 +80,27 @@ class InstantNotifier(
         )
         val lines = entries.map { listOfNotNull(it.title, it.detail?.takeIf { d -> d.isNotBlank() }).joinToString(" · ") }
         val title = if (entries.size == 1) name else context.getString(R.string.instant_title, name, entries.size)
+        val motivations = entries.map { GradeMotivation.forEntry(it, parent) }
+        // A grade gets an encouraging line under it; InboxStyle has one line per entry, so that needs BigTextStyle.
+        val style = if (motivations.all { it == null }) {
+            NotificationCompat.InboxStyle().also { style -> lines.take(MAX_LINES).forEach(style::addLine) }
+        } else {
+            val text = SpannableStringBuilder()
+            lines.zip(motivations).take(MAX_LINES).forEachIndexed { index, (line, motivation) ->
+                if (index > 0) text.append('\n')
+                text.append(line)
+                if (motivation != null) {
+                    text.append('\n')
+                    text.append(motivation, StyleSpan(Typeface.ITALIC), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+            }
+            NotificationCompat.BigTextStyle().bigText(text)
+        }
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(lines.first())
-            .setStyle(NotificationCompat.InboxStyle().also { style -> lines.take(MAX_LINES).forEach(style::addLine) })
+            .setStyle(style)
             .setContentIntent(pending)
             .setAutoCancel(true)
             .build()
