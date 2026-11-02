@@ -12,6 +12,7 @@ object Librus {
     const val PORTAL_TOKEN_URL = "https://portal.librus.pl/oauth2/access_token"
     const val PORTAL_API_URL = "https://portal.librus.pl/api"
     const val API_URL = "https://api.librus.pl/2.0"
+    const val API_V3_URL = "https://api.librus.pl/3.0"
     const val API_TOKEN_URL = "https://api.librus.pl/OAuth/Token"
     const val API_AUTHORIZATION = "Mjg6ODRmZGQzYTg3YjAzZDNlYTZmZmU3NzdiNThiMzMyYjE="
     const val REQUESTED_WITH = "pl.librus.synergiaDru2"

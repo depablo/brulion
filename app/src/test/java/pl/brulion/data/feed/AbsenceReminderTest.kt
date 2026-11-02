@@ -37,7 +37,7 @@ class AbsenceReminderTest {
         assertEquals(FeedKind.ABSENCE_REMINDER, reminder.kind)
         assertEquals("2026-W45", reminder.refKey)
         assertEquals("Do usprawiedliwienia: 6 lekcji", reminder.title)
-        assertTrue(reminder.detail!!.contains("e-usprawiedliwienia na librus.pl"))
+        assertTrue(reminder.detail!!.contains("w Brulionie, w zakładce Frekwencja"))
         assertTrue(reminder.detail!!.endsWith("23.10 (5 lekcji), 25.10 (Fizyka)"))
     }
 

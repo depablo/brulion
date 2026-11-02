@@ -5,11 +5,13 @@
 package pl.brulion.librus
 
 import kotlinx.serialization.json.JsonObject
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import pl.brulion.librus.LibrusException.Reason
 
-/** Librus REST API 2.0 (api.librus.pl). */
+/** Librus REST API: 2.0 for most data, 3.0 for the newer endpoints such as Justifications. */
 class LibrusApi(private val http: LibrusHttp) {
 
     class Me(
@@ -20,16 +22,21 @@ class LibrusApi(private val http: LibrusHttp) {
         val accountName: String,
     )
 
-    private suspend fun raw(token: String, endpoint: String, post: Boolean = false): HttpResult = http.execute(
-        Request.Builder()
-            .url("${Librus.API_URL}/$endpoint")
-            .header("Authorization", "Bearer $token")
-            .apply { if (post) post(ByteArray(0).toRequestBody()) }
-            .build()
-    )
+    suspend fun get(token: String, endpoint: String, post: Boolean = false): JsonObject =
+        request(token, Librus.API_URL, endpoint, if (post) ByteArray(0).toRequestBody() else null)
 
-    suspend fun get(token: String, endpoint: String, post: Boolean = false): JsonObject {
-        val result = raw(token, endpoint, post)
+    /** POSTs [body] as JSON to the 3.0 API. */
+    suspend fun post(token: String, endpoint: String, body: JsonObject): JsonObject =
+        request(token, Librus.API_V3_URL, endpoint, body.toString().toRequestBody(JSON_MEDIA_TYPE))
+
+    private suspend fun request(token: String, baseUrl: String, endpoint: String, body: RequestBody?): JsonObject {
+        val result = http.execute(
+            Request.Builder()
+                .url("$baseUrl/$endpoint")
+                .header("Authorization", "Bearer $token")
+                .apply { if (body != null) post(body) }
+                .build()
+        )
         if (result.code == 503) throw LibrusException(Reason.MAINTENANCE)
         val json = result.json()
         if (result.code != 200) {
@@ -63,4 +70,8 @@ class LibrusApi(private val http: LibrusHttp) {
 
     private fun fullName(first: String?, last: String?) =
         listOfNotNull(first?.trim(), last?.trim()).filter { it.isNotEmpty() }.joinToString(" ")
+
+    private companion object {
+        val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
+    }
 }

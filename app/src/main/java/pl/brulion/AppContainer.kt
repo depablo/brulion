@@ -21,6 +21,7 @@ import pl.brulion.data.migrateChildKeys
 import pl.brulion.data.Settings
 import pl.brulion.data.db.BrulionDatabase
 import pl.brulion.data.feed.FeedRecorder
+import pl.brulion.data.justifications.JustificationsRepository
 import pl.brulion.data.summary.DailySummaryService
 import pl.brulion.data.summary.SummaryNotifier
 import pl.brulion.data.summary.SummaryRepository
@@ -29,6 +30,7 @@ import pl.brulion.data.sync.SyncRepository
 import pl.brulion.data.update.UpdateManager
 import pl.brulion.librus.LibrusApi
 import pl.brulion.librus.LibrusHttp
+import pl.brulion.librus.LibrusJustifications
 import pl.brulion.librus.LibrusMessages
 import pl.brulion.librus.PortalAuth
 import pl.brulion.widget.TimetableWidget
@@ -60,6 +62,7 @@ class AppContainer(context: Context) {
         },
     )
     val messages = MessagesRepository(database, messageSessions, context.filesDir, diagnostics)
+    val justifications = JustificationsRepository(accounts, LibrusJustifications(librusApi), diagnostics)
     val currentProfile = CurrentProfile(context, accounts, appScope) { TimetableWidget.updateAll(context) }
     /** Set when a summary notification is tapped; the main screen then shows the feed. */
     val openFeedRequest = MutableStateFlow(false)

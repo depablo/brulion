@@ -2,6 +2,7 @@ package pl.brulion.ui.more
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.outlined.EventAvailable
 import androidx.compose.material.icons.outlined.FactCheck
 import androidx.compose.material.icons.outlined.StickyNote2
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -55,6 +57,7 @@ import pl.brulion.data.db.AttendanceCategory
 import pl.brulion.data.db.AttendanceEntity
 import pl.brulion.data.db.NoteEntity
 import pl.brulion.data.db.NotePolarity
+import pl.brulion.data.justifications.JUSTIFIABLE_CATEGORIES
 import pl.brulion.data.matchesQuery
 import pl.brulion.ui.common.EmptyState
 import pl.brulion.ui.common.NewBadge
@@ -246,9 +249,12 @@ private fun DateHeader(date: LocalDate) {
     )
 }
 
+/** Opens the e-Usprawiedliwienie form; a null [date] means "pick it in the form". */
+typealias OnJustify = (profileId: Long, date: LocalDate?, lessonNo: Int?) -> Unit
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun AttendanceScreen(onBack: () -> Unit) {
+fun AttendanceScreen(onBack: () -> Unit, onJustify: OnJustify) {
     ProfileDetailScaffold(stringResource(R.string.section_attendance), onBack) { profile ->
         val db = appContainer().database
         val items by remember(profile.id) { db.attendanceDao().observeAll(profile.id) }.collectAsStateWithLifecycle(null)
@@ -283,9 +289,25 @@ fun AttendanceScreen(onBack: () -> Unit) {
             if (notPresent.isEmpty()) {
                 item { Text(stringResource(R.string.attendance_all_present), color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
+            if (notPresent.any { it.category in JUSTIFIABLE_CATEGORIES }) {
+                item {
+                    Button(onClick = { onJustify(profile.id, null, null) }) {
+                        Text(stringResource(R.string.attendance_justify))
+                    }
+                }
+            }
             notPresent.groupBy { it.date }.forEach { (date, entries) ->
                 item(key = "d$date") { DateHeader(date) }
-                items(entries, key = { it.id }) { AttendanceRow(it) }
+                items(entries, key = { it.id }) { entry ->
+                    AttendanceRow(
+                        entry = entry,
+                        onClick = if (entry.category in JUSTIFIABLE_CATEGORIES && entry.lessonNo != null) {
+                            { onJustify(profile.id, entry.date, entry.lessonNo) }
+                        } else {
+                            null
+                        },
+                    )
+                }
             }
         }
     }
@@ -299,8 +321,11 @@ private fun attendancePercent(counts: Map<AttendanceCategory, Int>): Int? {
 }
 
 @Composable
-private fun AttendanceRow(entry: AttendanceEntity) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+private fun AttendanceRow(entry: AttendanceEntity, onClick: (() -> Unit)?) {
+    Row(
+        modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Box(
             Modifier
                 .width(40.dp)

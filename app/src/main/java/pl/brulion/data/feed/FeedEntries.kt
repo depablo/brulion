@@ -162,7 +162,7 @@ internal fun absenceReminder(profile: ProfileEntity, attendance: List<Attendance
         refKey = week,
         occurredAt = now,
         title = "Do usprawiedliwienia: ${lessonsCount(absences.size)}",
-        detail = "Usprawiedliwić można w module e-usprawiedliwienia na librus.pl.\n" + days.joinToString(", "),
+        detail = "Usprawiedliwić można w Brulionie, w zakładce Frekwencja.\n" + days.joinToString(", "),
     )
 }
 

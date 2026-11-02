@@ -14,6 +14,7 @@ import pl.brulion.ui.accounts.AccountsScreen
 import pl.brulion.ui.accounts.AccountsViewModel
 import pl.brulion.ui.common.LocalMarkedReadAt
 import pl.brulion.ui.common.appContainer
+import pl.brulion.librus.schoolToday
 import pl.brulion.ui.common.appViewModel
 import pl.brulion.ui.login.LoginViewModel
 import pl.brulion.ui.login.PortalLoginScreen
@@ -21,6 +22,8 @@ import pl.brulion.ui.login.WelcomeScreen
 import pl.brulion.ui.main.MainScreen
 import pl.brulion.ui.main.MainViewModel
 import pl.brulion.ui.main.MoreDestination
+import pl.brulion.ui.justifications.JustificationScreen
+import pl.brulion.ui.justifications.JustificationViewModel
 import pl.brulion.ui.main.MoreScreen
 import pl.brulion.ui.messages.ComposeScreen
 import pl.brulion.ui.messages.ComposeViewModel
@@ -33,6 +36,7 @@ import pl.brulion.ui.more.AttendanceScreen
 import pl.brulion.ui.more.EventsScreen
 import pl.brulion.ui.more.NotesScreen
 import pl.brulion.ui.settings.SettingsScreen
+import java.time.LocalDate
 
 @Serializable object WelcomeRoute
 @Serializable object PortalLoginRoute
@@ -47,6 +51,7 @@ import pl.brulion.ui.settings.SettingsScreen
 @Serializable data class MessageRoute(val profileId: Long, val messageId: Long)
 @Serializable data class ReplyRoute(val profileId: Long, val messageId: Long)
 @Serializable data class ComposeRoute(val profileId: Long)
+@Serializable data class JustificationRoute(val profileId: Long, val date: String? = null, val lessonNo: Int? = null)
 
 @Composable
 fun BrulionNavHost(startDestination: Any, navController: NavHostController = rememberNavController()) {
@@ -129,7 +134,30 @@ fun BrulionNavHost(startDestination: Any, navController: NavHostController = rem
             }
             composable<AnnouncementsRoute> { AnnouncementsScreen(back) }
             composable<EventsRoute> { EventsScreen(back) }
-            composable<AttendanceRoute> { AttendanceScreen(back) }
+            composable<AttendanceRoute> {
+                AttendanceScreen(
+                    onBack = back,
+                    onJustify = { profileId, date, lessonNo ->
+                        navController.navigate(JustificationRoute(profileId, date?.toString(), lessonNo))
+                    },
+                )
+            }
+            composable<JustificationRoute> { entry ->
+                val route = entry.toRoute<JustificationRoute>()
+                JustificationScreen(
+                    viewModel = appViewModel {
+                        JustificationViewModel(
+                            attendance = it.database.attendanceDao().observeAll(route.profileId),
+                            repository = it.justifications,
+                            appScope = it.appScope,
+                            profileId = route.profileId,
+                            initialDate = route.date?.let(LocalDate::parse) ?: schoolToday(),
+                            initialLessonNo = route.lessonNo,
+                        )
+                    },
+                    onClose = back,
+                )
+            }
             composable<NotesRoute> { NotesScreen(back) }
             composable<SettingsRoute> { SettingsScreen(back) }
             composable<MoreRoute> { MoreScreen(onBack = back, onOpen = openDestination) }

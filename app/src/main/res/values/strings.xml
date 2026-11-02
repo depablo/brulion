@@ -182,6 +182,22 @@
     <string name="attendance_late">Spóźnienia</string>
     <string name="attendance_released">Zwolnienia</string>
     <string name="attendance_other">Inne</string>
+    <string name="attendance_justify">Usprawiedliw nieobecności</string>
+    <string name="justification_title">e-Usprawiedliwienie</string>
+    <string name="justification_mode_lessons">Wybrane lekcje</string>
+    <string name="justification_mode_days">Kilka dni</string>
+    <string name="justification_day">Dzień</string>
+    <string name="justification_from">Od</string>
+    <string name="justification_to">Do</string>
+    <string name="justification_lessons">Lekcje do usprawiedliwienia</string>
+    <string name="justification_no_entries">Brak nieobecności ani spóźnień zapisanych w tym dniu.</string>
+    <string name="justification_pick_lessons">Zaznacz lekcje, które mają być usprawiedliwione.</string>
+    <string name="justification_bad_range">Data końca nie może być wcześniej niż data początku.</string>
+    <string name="justification_message">Treść wiadomości</string>
+    <string name="justification_notify">Powiadom nauczycieli</string>
+    <string name="justification_confirm_title">Wysłać usprawiedliwienie?</string>
+    <string name="justification_confirm_text">Usprawiedliwienie zostanie wysłane do szkoły przez Librus.</string>
+    <string name="justification_sent">Usprawiedliwienie zostało wysłane.</string>
 
     <string name="settings_title">Ustawienia</string>
     <string name="settings_summary_section">Podsumowanie dnia</string>
