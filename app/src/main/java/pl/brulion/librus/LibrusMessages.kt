@@ -179,7 +179,7 @@ class LibrusMessages(private val http: LibrusHttp) {
             } catch (e: LibrusException) {
                 throw LibrusException(Reason.SEND_UNCONFIRMED, e.detail, e)
             }
-            if (SENT_CONFIRMATION !in result.body) {
+            if (!sentPageConfirmed(result.finalUrl, result.body)) {
                 throw LibrusException(
                     Reason.SEND_UNCONFIRMED,
                     "message not confirmed (HTTP ${result.code})",
@@ -240,7 +240,6 @@ class LibrusMessages(private val http: LibrusHttp) {
     private companion object {
         const val SANDBOX_URL = "https://sandbox.librus.pl/index.php"
         const val SANDBOX_TRIES = 10
-        const val SENT_CONFIRMATION = "została wysłana"
         const val COMPOSE_PAGE_TTL = 2 * 60L
         val SINGLE_USE_KEY = Regex("singleUseKey=([\\w-]+)")
         val CSRF_TOKEN = Regex("var csrfTokenValue = \"([^\"]+)\"")
@@ -331,6 +330,20 @@ internal fun parseRecipients(html: String): List<Recipient> =
 
 private fun stripTags(html: String): String =
     decodeHtmlEntities(html.replace(Regex("<[^>]+>"), " ")).replace(Regex("\\s+"), " ").trim()
+
+/**
+ * Whether a message POST went through. Librus answers a sent message by going back to the
+ * Synergia messages page without the compose form. The form still being there means the send
+ * was refused. The old check (a confirmation text) never matched a real send, so it's only
+ * kept as a positive sign.
+ */
+private const val SENT_CONFIRMATION = "została wysłana"
+
+internal fun sentPageConfirmed(finalUrl: String, body: String): Boolean {
+    if (SENT_CONFIRMATION in body) return true
+    val onMessagesPage = finalUrl.substringBefore('?').endsWith("/wiadomosci")
+    return onMessagesPage && !body.contains("name=\"tresc\"")
+}
 
 /**
  * A short description of an HTML page for the diagnostics log: its title and the start of its
