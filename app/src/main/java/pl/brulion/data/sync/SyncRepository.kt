@@ -191,7 +191,7 @@ class SyncRepository(
                 }
                 else -> previous?.let { SentReadInfo(it.readAt, it.readCount, it.receiversCount) }
             }
-            parseSentMessage(profileId, json, read)
+            parseSentMessage(profileId, json, read)?.let { it.copy(body = known[it.id]?.body) }
         }
         dao.replaceAll(profileId, items)
     }

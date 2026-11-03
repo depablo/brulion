@@ -30,6 +30,8 @@ import pl.brulion.ui.messages.ComposeViewModel
 import pl.brulion.ui.messages.MessageScreen
 import pl.brulion.ui.messages.MessageViewModel
 import pl.brulion.ui.messages.ReplyScreen
+import pl.brulion.ui.messages.SentMessageScreen
+import pl.brulion.ui.messages.SentMessageViewModel
 import pl.brulion.ui.messages.ReplyViewModel
 import pl.brulion.ui.more.AnnouncementsScreen
 import pl.brulion.ui.more.AttendanceScreen
@@ -50,6 +52,7 @@ import java.time.LocalDate
 @Serializable object MoreRoute
 @Serializable data class MessageRoute(val profileId: Long, val messageId: Long)
 @Serializable data class ReplyRoute(val profileId: Long, val messageId: Long)
+@Serializable data class SentMessageRoute(val profileId: Long, val messageId: Long)
 @Serializable data class ComposeRoute(val profileId: Long)
 @Serializable data class JustificationRoute(val profileId: Long, val date: String? = null, val lessonNo: Int? = null)
 
@@ -96,6 +99,7 @@ fun BrulionNavHost(startDestination: Any, navController: NavHostController = rem
                     viewModel = appViewModel { MainViewModel(it) },
                     onOpen = openDestination,
                     onOpenMessage = { profileId, messageId -> navController.navigate(MessageRoute(profileId, messageId)) },
+                    onOpenSentMessage = { profileId, messageId -> navController.navigate(SentMessageRoute(profileId, messageId)) },
                     onCompose = { navController.navigate(ComposeRoute(it)) },
                 )
             }
@@ -105,6 +109,13 @@ fun BrulionNavHost(startDestination: Any, navController: NavHostController = rem
                     viewModel = appViewModel { MessageViewModel(it.database, it.messages, it.downloads, route.profileId, route.messageId) },
                     onBack = back,
                     onReply = { navController.navigate(ReplyRoute(route.profileId, route.messageId)) },
+                )
+            }
+            composable<SentMessageRoute> { entry ->
+                val route = entry.toRoute<SentMessageRoute>()
+                SentMessageScreen(
+                    viewModel = appViewModel { SentMessageViewModel(it.database, it.messages, route.profileId, route.messageId) },
+                    onBack = back,
                 )
             }
             composable<ReplyRoute> { entry ->

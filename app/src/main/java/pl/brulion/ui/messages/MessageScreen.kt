@@ -227,7 +227,7 @@ fun MessageScreen(viewModel: MessageViewModel, onBack: () -> Unit, onReply: () -
 
 /** Renders the HTML some notices contain, with clickable links; plain text stays as is. */
 @Composable
-private fun rememberMessageText(raw: String): AnnotatedString {
+internal fun rememberMessageText(raw: String): AnnotatedString {
     val linkColor = MaterialTheme.colorScheme.primary
     return remember(raw, linkColor) {
         // Bodies stored before envelopes were unwrapped show until the message is fetched again.

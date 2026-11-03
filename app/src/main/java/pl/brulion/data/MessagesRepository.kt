@@ -2,11 +2,14 @@ package pl.brulion.data
 
 import pl.brulion.data.db.BrulionDatabase
 import pl.brulion.data.db.MessageAttachmentEntity
+import pl.brulion.data.sync.decodeContent
 import pl.brulion.data.sync.parseMessageDetails
+import pl.brulion.data.sync.parseSentReadInfo
 import pl.brulion.librus.LibrusMessages
 import pl.brulion.librus.Recipient
 import pl.brulion.librus.RecipientGroup
 import pl.brulion.librus.nowSeconds
+import pl.brulion.librus.string
 import java.io.File
 
 /** Reading, downloading attachments and replying; listing is part of the regular sync. */
@@ -22,6 +25,20 @@ class MessagesRepository(
         val now = nowSeconds()
         val details = parseMessageDetails(profileId, messageId, json, now)
         db.messageDao().saveDetails(details.body, details.attachments, readAt = now)
+    }
+
+    /** Fetches a sent message's content and read state, and stores them in the sent folder. */
+    suspend fun openSent(profileId: Long, messageId: Long) {
+        val json = withSession(profileId) { it.outboxMessage(messageId) }
+        val read = parseSentReadInfo(json)
+        db.sentMessageDao().saveDetail(
+            profileId,
+            messageId,
+            body = decodeContent(json.string("Message")),
+            readAt = read.readAt,
+            readCount = read.readCount,
+            receiversCount = read.receiversCount,
+        )
     }
 
     /** Returns the downloaded file, reusing an earlier download. */

@@ -397,6 +397,15 @@ interface SentMessageDao {
     @Query("SELECT * FROM sent_messages WHERE profileId = :profileId")
     suspend fun all(profileId: Long): List<SentMessageEntity>
 
+    @Query("SELECT * FROM sent_messages WHERE profileId = :profileId AND id = :id")
+    fun observe(profileId: Long, id: Long): Flow<SentMessageEntity?>
+
+    @Query(
+        "UPDATE sent_messages SET body = :body, readAt = :readAt, readCount = :readCount, " +
+            "receiversCount = :receiversCount WHERE profileId = :profileId AND id = :id",
+    )
+    suspend fun saveDetail(profileId: Long, id: Long, body: String, readAt: Long?, readCount: Int?, receiversCount: Int?)
+
     @Query("SELECT * FROM sent_messages WHERE profileId = :profileId ORDER BY sentAt DESC")
     fun observeAll(profileId: Long): Flow<List<SentMessageEntity>>
 }

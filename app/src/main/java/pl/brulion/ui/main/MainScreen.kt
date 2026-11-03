@@ -89,7 +89,13 @@ enum class MoreDestination { MORE, ANNOUNCEMENTS, EVENTS, ATTENDANCE, NOTES, ACC
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(viewModel: MainViewModel, onOpen: (MoreDestination) -> Unit, onOpenMessage: (profileId: Long, messageId: Long) -> Unit, onCompose: (profileId: Long) -> Unit) {
+fun MainScreen(
+    viewModel: MainViewModel,
+    onOpen: (MoreDestination) -> Unit,
+    onOpenMessage: (profileId: Long, messageId: Long) -> Unit,
+    onOpenSentMessage: (profileId: Long, messageId: Long) -> Unit,
+    onCompose: (profileId: Long) -> Unit,
+) {
     val profile by viewModel.current.collectAsStateWithLifecycle()
     val profiles by viewModel.profiles.collectAsStateWithLifecycle()
     val syncStates by viewModel.syncStates.collectAsStateWithLifecycle()
@@ -184,7 +190,12 @@ fun MainScreen(viewModel: MainViewModel, onOpen: (MoreDestination) -> Unit, onOp
                 )
                 MainTab.GRADES -> GradesTab(current.id)
                 MainTab.TIMETABLE -> TimetableTab(current.id)
-                MainTab.MESSAGES -> MessagesTab(current.id, onOpen = { onOpenMessage(current.id, it) }, onCompose = { onCompose(current.id) })
+                MainTab.MESSAGES -> MessagesTab(
+                    current.id,
+                    onOpen = { onOpenMessage(current.id, it) },
+                    onOpenSent = { onOpenSentMessage(current.id, it) },
+                    onCompose = { onCompose(current.id) },
+                )
                 MainTab.FEED -> FeedTab(profiles) { entry ->
                     profiles.find { it.id == entry.profileId }?.let(viewModel::select)
                     when (entry.kind) {

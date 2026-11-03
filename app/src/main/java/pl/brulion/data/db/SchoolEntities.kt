@@ -233,6 +233,8 @@ data class SentMessageEntity(
     /** How many recipients have opened it, and how many there are; null until the details are fetched. */
     val readCount: Int? = null,
     val receiversCount: Int? = null,
+    /** Content, fetched when the message is opened; kept across syncs. */
+    val body: String? = null,
 )
 
 /**

@@ -57,7 +57,7 @@ import pl.brulion.ui.common.formatTimestamp
 enum class MessageFolder { INBOX, SENT }
 
 @Composable
-fun MessagesTab(profileId: Long, onOpen: (messageId: Long) -> Unit, onCompose: () -> Unit) {
+fun MessagesTab(profileId: Long, onOpen: (messageId: Long) -> Unit, onOpenSent: (messageId: Long) -> Unit, onCompose: () -> Unit) {
     val db = appContainer().database
     val messages by remember(profileId) { db.messageDao().observeInbox(profileId) }.collectAsStateWithLifecycle(null)
     val sent by remember(profileId) { db.sentMessageDao().observeAll(profileId) }.collectAsStateWithLifecycle(null)
@@ -96,7 +96,7 @@ fun MessagesTab(profileId: Long, onOpen: (messageId: Long) -> Unit, onCompose: (
             } else {
                 if (sent.isNullOrEmpty()) item { EmptyLine(R.string.messages_sent_empty) }
                 if (!sent.isNullOrEmpty() && sentList.isEmpty()) item { EmptyLine(R.string.search_nothing) }
-                items(sentList, key = { it.id }) { SentRow(it) }
+                items(sentList, key = { it.id }) { SentRow(it, Modifier.clickable { onOpenSent(it.id) }) }
             }
         }
         ExtendedFloatingActionButton(
@@ -130,10 +130,25 @@ private fun EmptyLine(text: Int) {
     Text(stringResource(text), Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
+/** Who has read a sent message, as one line: a count for several recipients, else the date. */
+@Composable
+internal fun sentReadStatus(message: SentMessageEntity): String {
+    val readBy = message.readCount
+    val receivers = message.receiversCount
+    val read = message.readAt
+    return when {
+        receivers != null && receivers > 1 && readBy != null && readBy > 0 ->
+            stringResource(R.string.messages_read_by, readBy, receivers)
+        receivers != null && receivers > 1 && readBy == 0 -> stringResource(R.string.messages_unread_sent)
+        read != null -> stringResource(R.string.messages_read_at, formatTimestamp(read))
+        else -> stringResource(R.string.messages_unread_sent)
+    }
+}
+
 /** A sent message: who got it, and whether anyone has read it yet. */
 @Composable
-private fun SentRow(message: SentMessageEntity) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+private fun SentRow(message: SentMessageEntity, modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = message.subject.ifBlank { stringResource(R.string.messages_no_subject) },
@@ -152,20 +167,14 @@ private fun SentRow(message: SentMessageEntity) {
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        val readBy = message.readCount
-        val receivers = message.receiversCount
-        val read = message.readAt
-        val status = when {
-            receivers != null && receivers > 1 && readBy != null && readBy > 0 ->
-                stringResource(R.string.messages_read_by, readBy, receivers)
-            receivers != null && receivers > 1 && readBy == 0 -> stringResource(R.string.messages_unread_sent)
-            read != null -> stringResource(R.string.messages_read_at, formatTimestamp(read))
-            else -> stringResource(R.string.messages_unread_sent)
-        }
         Text(
-            text = status,
+            text = sentReadStatus(message),
             style = MaterialTheme.typography.bodySmall,
-            color = if (read != null || (readBy ?: 0) > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (message.readAt != null || (message.readCount ?: 0) > 0) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
         )
     }
 }
