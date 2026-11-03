@@ -52,7 +52,7 @@ class AppContainer(context: Context) {
     val calendarExport = CalendarExport(context, database, accounts, settings, diagnostics)
     val instantNotifier = InstantNotifier(context, database, accounts, announcements, settings)
     val sync = SyncController(
-        SyncRepository(database, accounts, librusApi, messageSessions, feedRecorder),
+        SyncRepository(database, accounts, librusApi, messageSessions, feedRecorder, diagnostics),
         appScope,
         diagnostics,
         onSynced = {

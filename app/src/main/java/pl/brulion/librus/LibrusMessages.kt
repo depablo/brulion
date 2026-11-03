@@ -48,6 +48,16 @@ class LibrusMessages(private val http: LibrusHttp) {
             return json["data"]?.jsonArray?.map { it.jsonObject }.orEmpty()
         }
 
+        /** Newest sent messages, with the read date each recipient's copy got. Listing changes nothing. */
+        suspend fun outbox(limit: Int = 50): List<JsonObject> {
+            val json = getJson("api/outbox/messages?page=1&limit=$limit")
+            return json["data"]?.jsonArray?.map { it.jsonObject }.orEmpty()
+        }
+
+        /** One sent message in full. Viewing your own sent message doesn't change anything in Librus. */
+        suspend fun outboxMessage(id: Long): JsonObject =
+            getJson("api/outbox/messages/$id").obj("data") ?: throw LibrusException(Reason.NOT_FOUND, "sent message $id")
+
         /** Full message with its body and attachment list. Librus marks it as read. */
         suspend fun message(id: Long): JsonObject =
             getJson("api/inbox/messages/$id").obj("data") ?: throw LibrusException(Reason.NOT_FOUND, "message $id")
@@ -170,7 +180,11 @@ class LibrusMessages(private val http: LibrusHttp) {
                 throw LibrusException(Reason.SEND_UNCONFIRMED, e.detail, e)
             }
             if (SENT_CONFIRMATION !in result.body) {
-                throw LibrusException(Reason.SEND_UNCONFIRMED, "message not confirmed (HTTP ${result.code})")
+                throw LibrusException(
+                    Reason.SEND_UNCONFIRMED,
+                    "message not confirmed (HTTP ${result.code})",
+                    debug = "final URL ${result.finalUrl.substringBefore('?')}; ${summarizePage(result.body)}",
+                )
             }
         }
 
@@ -317,3 +331,21 @@ internal fun parseRecipients(html: String): List<Recipient> =
 
 private fun stripTags(html: String): String =
     decodeHtmlEntities(html.replace(Regex("<[^>]+>"), " ")).replace(Regex("\\s+"), " ").trim()
+
+/**
+ * A short description of an HTML page for the diagnostics log: its title and the start of its
+ * visible text. Scripts, styles and form fields (which can hold the message being sent) are left out.
+ */
+internal fun summarizePage(html: String): String {
+    val title = Regex("<title[^>]*>(.*?)</title>", RegexOption.DOT_MATCHES_ALL)
+        .find(html)?.groupValues?.get(1)?.let { normalizeWhitespace(it) }.orEmpty()
+    val visible = html
+        .replace(Regex("<(script|style|textarea|title)[^>]*>.*?</\\1>", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE)), " ")
+        .replace(Regex("<[^>]+>"), " ")
+        .let(::normalizeWhitespace)
+    return "title \"$title\", text \"${visible.take(SUMMARY_LENGTH)}\""
+}
+
+private fun normalizeWhitespace(text: String): String = text.replace(Regex("\\s+"), " ").trim()
+
+private const val SUMMARY_LENGTH = 200

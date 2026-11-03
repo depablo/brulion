@@ -379,3 +379,24 @@ data class InboxMessage(
     val alsoIn: List<Long> get() = otherProfileIds?.split(',')?.mapNotNull { it.trim().toLongOrNull() }.orEmpty()
     val audience: MessageAudience get() = MessageAudience.of(receiversCount, alsoIn.isNotEmpty())
 }
+
+@Dao
+interface SentMessageDao {
+    @Query("DELETE FROM sent_messages WHERE profileId = :profileId")
+    suspend fun deleteAll(profileId: Long)
+
+    @Insert
+    suspend fun insertAll(items: List<SentMessageEntity>)
+
+    @Transaction
+    suspend fun replaceAll(profileId: Long, items: List<SentMessageEntity>) {
+        deleteAll(profileId)
+        insertAll(items)
+    }
+
+    @Query("SELECT * FROM sent_messages WHERE profileId = :profileId")
+    suspend fun all(profileId: Long): List<SentMessageEntity>
+
+    @Query("SELECT * FROM sent_messages WHERE profileId = :profileId ORDER BY sentAt DESC")
+    fun observeAll(profileId: Long): Flow<List<SentMessageEntity>>
+}

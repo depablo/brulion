@@ -213,6 +213,29 @@ data class MessageEntity(
 )
 
 /**
+ * A message the user sent: the "Wysłane" folder. Recipients are kept as one display string,
+ * because the folder only shows who got it, not the recipient records.
+ */
+@Entity(
+    tableName = "sent_messages",
+    primaryKeys = ["profileId", "id"],
+    foreignKeys = [ForeignKey(ProfileEntity::class, ["id"], ["profileId"], onDelete = ForeignKey.CASCADE)],
+)
+data class SentMessageEntity(
+    val profileId: Long,
+    val id: Long,
+    val recipients: String,
+    val subject: String,
+    val preview: String,
+    val sentAt: Long,
+    /** Null while no recipient has opened the message. From the single-message view, not the list. */
+    val readAt: Long?,
+    /** How many recipients have opened it, and how many there are; null until the details are fetched. */
+    val readCount: Int? = null,
+    val receiversCount: Int? = null,
+)
+
+/**
  * Full content of a message opened in the app. Kept apart from [MessageEntity], which
  * every sync rewrites, so opened messages stay readable offline.
  */

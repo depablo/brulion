@@ -7,6 +7,7 @@ package pl.brulion.data.sync
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import pl.brulion.data.db.MessageAttachmentEntity
+import pl.brulion.data.db.SentMessageEntity
 import pl.brulion.data.db.MessageBodyEntity
 import pl.brulion.data.db.MessageEntity
 import pl.brulion.librus.MessageHtml
@@ -40,6 +41,53 @@ internal fun parseMessage(profileId: Long, item: JsonObject): MessageEntity? {
         firstSeenAt = 0,
         automatic = item.string("category") == AUTOMATIC_CATEGORY,
     )
+}
+
+/**
+ * One item of `wiadomosci.librus.pl/api/outbox/messages`. The field names are assumed to match the
+ * inbox list; the sync logs the real ones (see SyncRepository) so a mismatch shows up in diagnostics.
+ */
+internal fun parseSentMessage(profileId: Long, item: JsonObject, read: SentReadInfo?): SentMessageEntity? {
+    val id = item.string("messageId")?.toLongOrNull() ?: return null
+    return SentMessageEntity(
+        profileId = profileId,
+        id = id,
+        recipients = recipientNames(item),
+        subject = item.string("topic").orEmpty().trim(),
+        preview = MessageHtml.toPlainText(decodeContent(item.string("content"))),
+        sentAt = parseLibrusDateTime(item.string("sendDate")) ?: 0,
+        readAt = read?.readAt,
+        readCount = read?.readCount,
+        receiversCount = read?.receiversCount,
+    )
+}
+
+/** Read state of a sent message, from its single-message view. The list has no read date. */
+internal class SentReadInfo(val readAt: Long?, val readCount: Int?, val receiversCount: Int?)
+
+internal fun parseSentReadInfo(detail: JsonObject) = SentReadInfo(
+    readAt = parseLibrusDateTime(detail.string("readDate")),
+    readCount = detail.int("readedCount"),
+    receiversCount = detail.int("receiversCount"),
+)
+
+/** Names of the people a sent message went to, comma-separated. */
+private fun recipientNames(item: JsonObject): String {
+    val fromList = (item["receivers"] as? JsonArray)?.objects().orEmpty().mapNotNull { receiver ->
+        listOfNotNull(receiver.string("firstName"), receiver.string("lastName"))
+            .joinToString(" ")
+            .ifBlank { receiver.string("name").orEmpty() }
+            .normalizeSpaces()
+            .ifEmpty { null }
+    }
+    val names = fromList.ifEmpty {
+        listOfNotNull(item.string("receiverFirstName"), item.string("receiverLastName"))
+            .joinToString(" ")
+            .normalizeSpaces()
+            .ifEmpty { item.string("receiverName").orEmpty().normalizeSpaces() }
+            .let { listOfNotNull(it.ifEmpty { null }) }
+    }
+    return names.joinToString(", ")
 }
 
 class MessageDetails(val body: MessageBodyEntity, val attachments: List<MessageAttachmentEntity>)

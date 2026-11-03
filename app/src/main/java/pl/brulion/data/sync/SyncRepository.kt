@@ -3,11 +3,13 @@ package pl.brulion.data.sync
 import androidx.room.withTransaction
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.serialization.json.JsonArray
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import pl.brulion.data.AccountRepository
+import pl.brulion.data.Diagnostics
 import pl.brulion.data.MessageSessions
 import pl.brulion.data.db.BrulionDatabase
 import pl.brulion.data.db.GradeEntity
@@ -23,6 +25,9 @@ import pl.brulion.librus.LibrusApi
 import pl.brulion.librus.LibrusException
 import pl.brulion.librus.LibrusException.Reason
 import pl.brulion.librus.nowSeconds
+import pl.brulion.librus.int
+import pl.brulion.librus.objects
+import pl.brulion.librus.string
 
 enum class SyncSection { GRADES, ANNOUNCEMENTS, ATTENDANCE, EVENTS, NOTES, LUCKY_NUMBER, TIMETABLE, MESSAGES }
 
@@ -42,7 +47,11 @@ class SyncRepository(
     private val api: LibrusApi,
     private val messageSessions: MessageSessions,
     private val feed: FeedRecorder,
+    private val diagnostics: Diagnostics,
 ) {
+    /** Logged once per app run, to see the response shape of the sent folder without flooding the log. */
+    private var sentFieldsLogged = false
+
     /** Runs on [Dispatchers.Default]: parsing whole-year JSON would stall the UI thread. */
     suspend fun sync(profileId: Long): SyncReport = withContext(Dispatchers.Default) { syncProfile(profileId) }
 
@@ -151,8 +160,59 @@ class SyncRepository(
                 it.copy(firstSeenAt = stamper.stamp(it.id.toString(), backfill = it.sentAt <= sectionLastOkAt))
             }, complete = page.size < INBOX_PAGE)
             fetchReadDetails(profileId, items)
+            syncSent(profileId)
             SectionResult.Ok(items.size, stamper.newCount)
         }
+    }
+
+    /**
+     * The "Wysłane" folder, replaced as a whole. The list has no read date, so read state comes
+     * from each message's own view: fetched for messages not yet seen as read, a few per sync,
+     * newest first. Best effort: a failure keeps the old list and doesn't fail the inbox.
+     */
+    private suspend fun syncSent(profileId: Long) {
+        val page = try {
+            messageSessions.withSession(profileId) { it.outbox(INBOX_PAGE) }
+        } catch (e: LibrusException) {
+            diagnostics.log("sent messages $profileId failed", e)
+            return
+        }
+        val dao = db.sentMessageDao()
+        val known = dao.all(profileId).associateBy { it.id }
+        var detailsLeft = SENT_DETAILS_PER_SYNC
+        val items = page.mapNotNull { json ->
+            val id = json.string("messageId")?.toLongOrNull()
+            val previous = id?.let { known[it] }
+            val read = when {
+                previous?.readAt != null -> SentReadInfo(previous.readAt, previous.readCount, previous.receiversCount)
+                id != null && detailsLeft > 0 -> {
+                    detailsLeft--
+                    fetchSentRead(profileId, id) ?: SentReadInfo(previous?.readAt, previous?.readCount, previous?.receiversCount)
+                }
+                else -> previous?.let { SentReadInfo(it.readAt, it.readCount, it.receiversCount) }
+            }
+            parseSentMessage(profileId, json, read)
+        }
+        dao.replaceAll(profileId, items)
+    }
+
+    /** Read state of one sent message, or null if its view can't be fetched. Logs field names and value kinds, never content. */
+    private suspend fun fetchSentRead(profileId: Long, id: Long): SentReadInfo? {
+        val detail = try {
+            messageSessions.withSession(profileId) { it.outboxMessage(id) }
+        } catch (e: LibrusException) {
+            diagnostics.log("outbox message $id failed", e)
+            return null
+        }
+        if (!sentFieldsLogged) {
+            sentFieldsLogged = true
+            diagnostics.log("outbox message fields: ${detail.keys.sorted().joinToString()}")
+            diagnostics.log("outbox read sample: readDate=${detail.string("readDate")?.take(4)}..., readedCount=${detail.int("readedCount")}, receiversCount=${detail.int("receiversCount")}")
+            (detail["receivers"] as? JsonArray)?.objects()?.firstOrNull()?.let {
+                diagnostics.log("outbox receivers[0] fields: ${it.keys.sorted().joinToString()}")
+            }
+        }
+        return parseSentReadInfo(detail)
     }
 
     /**
@@ -221,5 +281,6 @@ class SyncRepository(
         val SOFT_REASONS = setOf(Reason.FEATURE_DISABLED, Reason.ACCESS_DENIED, Reason.NOT_FOUND)
         const val INBOX_PAGE = 50
         const val DETAILS_PER_SYNC = 15
+        const val SENT_DETAILS_PER_SYNC = 20
     }
 }

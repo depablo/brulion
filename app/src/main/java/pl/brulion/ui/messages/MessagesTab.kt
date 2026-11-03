@@ -2,6 +2,7 @@ package pl.brulion.ui.messages
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,9 +20,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Attachment
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Groups
-import androidx.compose.material.icons.outlined.MarkEmailRead
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -43,46 +45,58 @@ import pl.brulion.data.childKey
 import pl.brulion.data.db.InboxMessage
 import pl.brulion.data.db.MessageAudience
 import pl.brulion.data.db.ProfileEntity
+import pl.brulion.data.db.SentMessageEntity
 import pl.brulion.data.matchesQuery
 import pl.brulion.librus.MessageHtml
-import pl.brulion.ui.common.EmptyState
 import pl.brulion.ui.common.NameAvatar
 import pl.brulion.ui.common.SearchField
 import pl.brulion.ui.common.appContainer
 import pl.brulion.ui.common.formatTimestamp
 
+/** The inbox ("Odebrane") and the sent folder ("Wysłane") of the messages tab. */
+enum class MessageFolder { INBOX, SENT }
+
 @Composable
 fun MessagesTab(profileId: Long, onOpen: (messageId: Long) -> Unit, onCompose: () -> Unit) {
     val db = appContainer().database
     val messages by remember(profileId) { db.messageDao().observeInbox(profileId) }.collectAsStateWithLifecycle(null)
+    val sent by remember(profileId) { db.sentMessageDao().observeAll(profileId) }.collectAsStateWithLifecycle(null)
     val profiles by appContainer().accounts.allProfiles.collectAsStateWithLifecycle(emptyList())
     val bodies by remember(profileId) { db.messageDao().observeBodies(profileId) }.collectAsStateWithLifecycle(emptyList())
     var query by rememberSaveable(profileId) { mutableStateOf("") }
+    var folder by rememberSaveable(profileId) { mutableStateOf(MessageFolder.INBOX) }
     val all = messages ?: return
     // Bodies are only known for messages opened or fetched in the background.
     val bodyOf = remember(bodies) { bodies.associate { it.messageId to it.body } }
     val list = remember(all, bodyOf, query) {
         all.filter { matchesQuery(query, it.message.senderName, it.message.subject, it.message.preview, bodyOf[it.message.id]) }
     }
+    val sentList = remember(sent, query) {
+        sent.orEmpty().filter { matchesQuery(query, it.recipients, it.subject, it.preview) }
+    }
     Box(Modifier.fillMaxSize()) {
-        if (all.isEmpty()) {
-            EmptyState(Icons.Outlined.MarkEmailRead, stringResource(R.string.messages_empty))
-        } else {
-            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 8.dp, bottom = 88.dp)) {
-                item(key = "search") {
-                    SearchField(
-                        query = query,
-                        onQueryChange = { query = it },
-                        placeholder = stringResource(R.string.messages_search),
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                    )
-                }
-                if (list.isEmpty()) {
-                    item { Text(stringResource(R.string.search_nothing), Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                }
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 8.dp, bottom = 88.dp)) {
+            item(key = "folders") {
+                FolderChips(folder, onSelect = { folder = it }, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+            }
+            item(key = "search") {
+                SearchField(
+                    query = query,
+                    onQueryChange = { query = it },
+                    placeholder = stringResource(R.string.messages_search),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
+            if (folder == MessageFolder.INBOX) {
+                if (all.isEmpty()) item { EmptyLine(R.string.messages_empty) }
+                if (all.isNotEmpty() && list.isEmpty()) item { EmptyLine(R.string.search_nothing) }
                 items(list, key = { it.message.id }) { item ->
                     MessageRow(item, profiles, Modifier.clickable { onOpen(item.message.id) })
                 }
+            } else {
+                if (sent.isNullOrEmpty()) item { EmptyLine(R.string.messages_sent_empty) }
+                if (!sent.isNullOrEmpty() && sentList.isEmpty()) item { EmptyLine(R.string.search_nothing) }
+                items(sentList, key = { it.id }) { SentRow(it) }
             }
         }
         ExtendedFloatingActionButton(
@@ -90,6 +104,68 @@ fun MessagesTab(profileId: Long, onOpen: (messageId: Long) -> Unit, onCompose: (
             icon = { Icon(Icons.Outlined.Edit, null) },
             text = { Text(stringResource(R.string.compose_title)) },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FolderChips(selected: MessageFolder, onSelect: (MessageFolder) -> Unit, modifier: Modifier = Modifier) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(
+            selected = selected == MessageFolder.INBOX,
+            onClick = { onSelect(MessageFolder.INBOX) },
+            label = { Text(stringResource(R.string.messages_folder_inbox)) },
+        )
+        FilterChip(
+            selected = selected == MessageFolder.SENT,
+            onClick = { onSelect(MessageFolder.SENT) },
+            label = { Text(stringResource(R.string.messages_folder_sent)) },
+        )
+    }
+}
+
+@Composable
+private fun EmptyLine(text: Int) {
+    Text(stringResource(text), Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+/** A sent message: who got it, and whether anyone has read it yet. */
+@Composable
+private fun SentRow(message: SentMessageEntity) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = message.subject.ifBlank { stringResource(R.string.messages_no_subject) },
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(formatTimestamp(message.sentAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Text(
+            text = stringResource(R.string.messages_sent_to, message.recipients.ifBlank { stringResource(R.string.messages_recipient_unknown) }),
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        val readBy = message.readCount
+        val receivers = message.receiversCount
+        val read = message.readAt
+        val status = when {
+            receivers != null && receivers > 1 && readBy != null && readBy > 0 ->
+                stringResource(R.string.messages_read_by, readBy, receivers)
+            receivers != null && receivers > 1 && readBy == 0 -> stringResource(R.string.messages_unread_sent)
+            read != null -> stringResource(R.string.messages_read_at, formatTimestamp(read))
+            else -> stringResource(R.string.messages_unread_sent)
+        }
+        Text(
+            text = status,
+            style = MaterialTheme.typography.bodySmall,
+            color = if (read != null || (readBy ?: 0) > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

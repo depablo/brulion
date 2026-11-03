@@ -1,10 +1,15 @@
 package pl.brulion.librus
 
+/**
+ * [detail] is shown to the user. [debug] is only for the diagnostics log: it goes into the
+ * exception message, which the UI never shows.
+ */
 class LibrusException(
     val reason: Reason,
     val detail: String? = null,
     cause: Throwable? = null,
-) : Exception(reason.name + (detail?.let { ": $it" } ?: ""), cause) {
+    debug: String? = null,
+) : Exception(reason.name + (detail?.let { ": $it" } ?: "") + (debug?.let { " [$it]" } ?: ""), cause) {
 
     enum class Reason {
         NETWORK,

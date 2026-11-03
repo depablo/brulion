@@ -25,12 +25,13 @@ import pl.brulion.data.sync.SyncSection
         MessageEntity::class,
         MessageBodyEntity::class,
         MessageAttachmentEntity::class,
+        SentMessageEntity::class,
         FeedEntryEntity::class,
         SectionSyncEntity::class,
         HiddenAnnouncementEntity::class,
         CalendarLinkEntity::class,
     ],
-    version = 12,
+    version = 14,
     autoMigrations = [
         AutoMigration(from = 1, to = 2, spec = BrulionDatabase.DropSynergiaLogin::class),
         AutoMigration(from = 2, to = 3),
@@ -43,6 +44,8 @@ import pl.brulion.data.sync.SyncSection
         AutoMigration(from = 9, to = 10),
         AutoMigration(from = 10, to = 11),
         AutoMigration(from = 11, to = 12),
+        AutoMigration(from = 12, to = 13),
+        AutoMigration(from = 13, to = 14),
     ],
 )
 @TypeConverters(Converters::class)
@@ -57,6 +60,7 @@ abstract class BrulionDatabase : RoomDatabase() {
     abstract fun luckyNumberDao(): LuckyNumberDao
     abstract fun timetableDao(): TimetableDao
     abstract fun messageDao(): MessageDao
+    abstract fun sentMessageDao(): SentMessageDao
     abstract fun feedDao(): FeedDao
     abstract fun sectionSyncDao(): SectionSyncDao
     abstract fun hiddenAnnouncementDao(): HiddenAnnouncementDao

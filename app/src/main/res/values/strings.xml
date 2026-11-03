@@ -121,6 +121,15 @@
     <string name="grade_type_year_final">roczna</string>
 
     <string name="messages_empty">Brak wiadomości</string>
+    <string name="messages_folder_inbox">Odebrane</string>
+    <string name="messages_folder_sent">Wysłane</string>
+    <string name="messages_sent_empty">Brak wysłanych wiadomości</string>
+    <string name="messages_sent_to">Do: %1$s</string>
+    <string name="messages_read_at">Przeczytana: %1$s</string>
+    <string name="messages_unread_sent">Jeszcze nieprzeczytana</string>
+    <string name="messages_read_by">Przeczytana przez %1$d z %2$d odbiorców</string>
+    <string name="messages_no_subject">(bez tematu)</string>
+    <string name="messages_recipient_unknown">nieznani odbiorcy</string>
     <string name="messages_attachment">Załącznik</string>
     <string name="messages_also_in">Też u: %1$s</string>
     <string name="audience_direct_short">do Ciebie</string>
