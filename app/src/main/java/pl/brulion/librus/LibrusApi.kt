@@ -39,7 +39,8 @@ class LibrusApi(private val http: LibrusHttp) {
         )
         if (result.code == 503) throw LibrusException(Reason.MAINTENANCE)
         val json = result.json()
-        if (result.code != 200) {
+        // Any 2xx is success: Librus answers a saved POST (e.g. Justifications) with 201 Created.
+        if (result.code !in 200..299) {
             val error = json?.string("Code") ?: json?.string("Message") ?: json?.string("Status")
             val reason = when (error) {
                 "TokenIsExpired" -> Reason.TOKEN_EXPIRED
