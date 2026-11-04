@@ -1,6 +1,8 @@
 package pl.brulion.ui
 
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -60,5 +62,14 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_PROFILE_ID = "profile_id"
         const val EXTRA_OPEN_FEED = "open_feed"
         const val EXTRA_SHOW_UPDATE = "show_update"
+
+        /**
+         * Intent for a notification or widget tap. PendingIntents treat intents without action or
+         * data as equal, and then ignore extras, so two sources with the same request code would
+         * overwrite each other. A unique [source] and [id] in the data URI keeps them apart.
+         */
+        fun openIntent(context: Context, source: String, id: String): Intent =
+            Intent(context, MainActivity::class.java)
+                .setData(Uri.Builder().scheme("brulion").authority(source).appendPath(id).build())
     }
 }

@@ -24,7 +24,7 @@ class SummaryNotifier(private val context: Context) {
     fun show(profileId: Long, summary: DailySummary) {
         if (!canNotify()) return
         createChannel()
-        val intent = Intent(context, MainActivity::class.java)
+        val intent = MainActivity.openIntent(context, "summary", profileId.toString())
             .putExtra(MainActivity.EXTRA_PROFILE_ID, profileId)
             .putExtra(MainActivity.EXTRA_OPEN_FEED, true)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)

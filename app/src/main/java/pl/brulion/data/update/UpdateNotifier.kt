@@ -21,7 +21,7 @@ class UpdateNotifier(private val context: Context) {
     fun show(info: UpdateInfo): Boolean {
         if (!canNotify()) return false
         createChannel()
-        val intent = Intent(context, MainActivity::class.java)
+        val intent = MainActivity.openIntent(context, "update", "prompt")
             .putExtra(MainActivity.EXTRA_SHOW_UPDATE, true)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         val pending = PendingIntent.getActivity(
@@ -54,7 +54,7 @@ class UpdateNotifier(private val context: Context) {
         val pending = PendingIntent.getActivity(
             context,
             NOTIFICATION_ID,
-            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            MainActivity.openIntent(context, "update", "installed").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)

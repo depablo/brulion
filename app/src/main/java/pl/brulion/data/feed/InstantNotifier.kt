@@ -71,7 +71,7 @@ class InstantNotifier(
 
     private fun show(child: String, profileId: Long, name: String, entries: List<FeedEntryEntity>, parent: Boolean) {
         createChannel()
-        val intent = Intent(context, MainActivity::class.java)
+        val intent = MainActivity.openIntent(context, "instant", child)
             .putExtra(MainActivity.EXTRA_PROFILE_ID, profileId)
             .putExtra(MainActivity.EXTRA_OPEN_FEED, true)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)

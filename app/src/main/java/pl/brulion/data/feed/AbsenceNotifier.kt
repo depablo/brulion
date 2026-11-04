@@ -27,7 +27,7 @@ class AbsenceNotifier(private val context: Context) {
         if (!canNotify()) return
         createChannel()
         val id = reminder.childKey.hashCode()
-        val open = Intent(context, MainActivity::class.java)
+        val open = MainActivity.openIntent(context, "absence", profile.id.toString())
             .putExtra(MainActivity.EXTRA_PROFILE_ID, profile.id)
             .putExtra(MainActivity.EXTRA_OPEN_FEED, true)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)

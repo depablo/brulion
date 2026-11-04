@@ -137,7 +137,7 @@ class TimetableWidget : AppWidgetProvider() {
                 ?.let { id -> container.accounts.allProfiles.first().find { it.id == id } }
             // Tapping opens the student the widget shows; one request code per widget, so
             // widgets of different students don't share (and overwrite) one intent.
-            val open = Intent(context, MainActivity::class.java)
+            val open = MainActivity.openIntent(context, "widget", appWidgetId.toString())
                 .apply { chosen?.let { putExtra(MainActivity.EXTRA_PROFILE_ID, it.id) } }
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             views.setOnClickPendingIntent(
