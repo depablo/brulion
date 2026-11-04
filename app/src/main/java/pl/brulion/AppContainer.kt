@@ -1,6 +1,7 @@
 package pl.brulion
 
 import android.content.Context
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -37,9 +38,16 @@ import pl.brulion.widget.TimetableWidget
 
 /** Manual dependency container; the app is small enough not to need a DI framework. */
 class AppContainer(context: Context) {
-    /** Work that should outlive a single screen, like a sync started before leaving it. */
-    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     val diagnostics = Diagnostics(context)
+    /**
+     * Work that should outlive a single screen, like a sync started before leaving it. A failure
+     * here is logged rather than thrown, since nothing on screen is waiting for it to end the process.
+     */
+    val appScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.Main.immediate + CoroutineExceptionHandler { _, error ->
+            diagnostics.log("Background work failed", error)
+        },
+    )
     private val http = LibrusHttp(debug = BuildConfig.DEBUG, onRequest = diagnostics::log)
     val database = BrulionDatabase.create(context)
     val librusApi = LibrusApi(http)

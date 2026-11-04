@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.view.View
 import android.widget.RemoteViews
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,7 +34,7 @@ class TimetableWidget : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, manager: AppWidgetManager, appWidgetIds: IntArray) {
         val pending = goAsync()
-        scope.launch {
+        scope.launch(failuresLoggedIn(context)) {
             try {
                 appWidgetIds.forEach { manager.updateAppWidget(it, render(context, it)) }
             } finally {
@@ -55,7 +56,7 @@ class TimetableWidget : AppWidgetProvider() {
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return
         setStep(context, appWidgetId, stepOf(context, appWidgetId) + intent.getIntExtra(EXTRA_DELTA, 0))
         val pending = goAsync()
-        scope.launch {
+        scope.launch(failuresLoggedIn(context)) {
             try {
                 AppWidgetManager.getInstance(context).updateAppWidget(appWidgetId, render(context, appWidgetId))
             } finally {
@@ -76,11 +77,18 @@ class TimetableWidget : AppWidgetProvider() {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, TimetableWidget::class.java))
             if (ids.isEmpty()) return
-            scope.launch { ids.forEach { manager.updateAppWidget(it, render(context, it)) } }
+            scope.launch(failuresLoggedIn(context)) { ids.forEach { manager.updateAppWidget(it, render(context, it)) } }
         }
 
         fun update(context: Context, appWidgetId: Int) {
-            scope.launch { AppWidgetManager.getInstance(context).updateAppWidget(appWidgetId, render(context, appWidgetId)) }
+            scope.launch(failuresLoggedIn(context)) {
+                AppWidgetManager.getInstance(context).updateAppWidget(appWidgetId, render(context, appWidgetId))
+            }
+        }
+
+        /** A failed widget render is logged; it must not end the process that is refreshing it in the background. */
+        private fun failuresLoggedIn(context: Context) = CoroutineExceptionHandler { _, error ->
+            (context.applicationContext as BrulionApp).container.diagnostics.log("Widget update failed", error)
         }
 
         private fun prefs(context: Context) = context.getSharedPreferences("widgets", Context.MODE_PRIVATE)
