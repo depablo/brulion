@@ -11,7 +11,6 @@ import pl.brulion.data.db.EventEntity
 import pl.brulion.data.db.LuckyNumberEntity
 import pl.brulion.data.db.NoteEntity
 import pl.brulion.data.db.NotePolarity
-import pl.brulion.librus.array
 import pl.brulion.librus.bool
 import pl.brulion.librus.int
 import pl.brulion.librus.librusColor
@@ -23,13 +22,14 @@ import pl.brulion.librus.parseLibrusDate
 import pl.brulion.librus.parseLibrusDateTime
 import pl.brulion.librus.parseLibrusTime
 import pl.brulion.librus.refId
+import pl.brulion.librus.requiredArray
 import pl.brulion.librus.schoolToday
 import pl.brulion.librus.string
 
 internal class AnnouncementParser(private val session: SyncSession, private val profileId: Long) {
     suspend fun parse(): List<AnnouncementEntity> {
         val teachers = session.teachers()
-        return session.get("SchoolNotices").array("SchoolNotices")?.objects().orEmpty().mapNotNull { notice ->
+        return session.get("SchoolNotices").requiredArray("SchoolNotices").objects().mapNotNull { notice ->
             AnnouncementEntity(
                 profileId = profileId,
                 id = notice.string("Id") ?: return@mapNotNull null,
@@ -73,7 +73,7 @@ internal class AttendanceParser(private val session: SyncSession, private val pr
             )
         }
 
-        return session.get("Attendances").array("Attendances")?.objects().orEmpty().mapNotNull { item ->
+        return session.get("Attendances").requiredArray("Attendances").objects().mapNotNull { item ->
             val id = item.string("Id") ?: return@mapNotNull null
             val date = parseLibrusDate(item.string("Date")) ?: return@mapNotNull null
             val type = item.refId("Type")?.let(types::get)
@@ -104,7 +104,7 @@ internal class EventParser(private val session: SyncSession, private val profile
         val types = session.byId("HomeWorks/Categories", "Categories")
         val startTimes = runCatching { session.lessonStartTimes() }.getOrDefault(emptyMap())
 
-        return session.get("HomeWorks").array("HomeWorks")?.objects().orEmpty().mapNotNull { event ->
+        return session.get("HomeWorks").requiredArray("HomeWorks").objects().mapNotNull { event ->
             val id = event.long("Id") ?: return@mapNotNull null
             val date = parseLibrusDate(event.string("Date")) ?: return@mapNotNull null
             val type = event.refId("Category")?.let(types::get)
@@ -133,7 +133,7 @@ internal class NoteParser(private val session: SyncSession, private val profileI
         val teachers = session.teachers()
         val categories = runCatching { session.byId("Notes/Categories", "Categories") }.getOrDefault(emptyMap())
 
-        return session.get("Notes").array("Notes")?.objects().orEmpty().mapNotNull { note ->
+        return session.get("Notes").requiredArray("Notes").objects().mapNotNull { note ->
             NoteEntity(
                 profileId = profileId,
                 id = note.long("Id") ?: return@mapNotNull null,

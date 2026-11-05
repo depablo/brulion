@@ -153,7 +153,13 @@ class SyncRepository(
             val page = messageSessions.withSession(profileId) { it.inbox(INBOX_PAGE) }
             val items = page.mapNotNull { parseMessage(profileId, it) }
             val dao = db.messageDao()
-            val stamper = Stamper(dao.seen(profileId), newStamp)
+            val seen = dao.seen(profileId)
+            // The inbox is read from the web page: an empty result with messages stored means the page
+            // changed, not that every message was deleted. Keep what's stored and fail the section.
+            if (items.isEmpty() && seen.isNotEmpty()) {
+                throw LibrusException(LibrusException.Reason.FORM_CHANGED, "inbox came back empty while ${seen.size} messages are stored")
+            }
+            val stamper = Stamper(seen, newStamp)
             // Messages sent before the previous sync of this section were missed, not received now,
             // so they shouldn't show up in the summary as new.
             dao.mergeInbox(profileId, items.map {

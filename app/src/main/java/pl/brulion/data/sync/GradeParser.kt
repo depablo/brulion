@@ -19,6 +19,7 @@ import pl.brulion.librus.obj
 import pl.brulion.librus.objects
 import pl.brulion.librus.parseLibrusDateTime
 import pl.brulion.librus.refId
+import pl.brulion.librus.requiredArray
 import pl.brulion.librus.string
 
 // "0" (e.g. missing work) is shown but has no value for the average, same as in Szkolny.
@@ -45,7 +46,7 @@ internal class GradeParser(private val session: SyncSession, private val profile
         val comments = session.byId("Grades/Comments", "Comments")
             .mapValues { it.value.string("Text").orEmpty().normalizeSpaces() }
 
-        val grades = session.get("Grades").array("Grades")?.objects().orEmpty()
+        val grades = session.get("Grades").requiredArray("Grades").objects()
         // A grade with Improvement.Id corrects an older one; remember the link on the older grade.
         val improvedBy = grades.mapNotNull { grade ->
             val id = grade.long("Id") ?: return@mapNotNull null
@@ -99,7 +100,7 @@ internal class GradeParser(private val session: SyncSession, private val profile
         val teachers = session.teachers()
         val categories = session.byId("PointGrades/Categories", "Categories")
 
-        return session.get("PointGrades").array("Grades")?.objects().orEmpty().mapNotNull { grade ->
+        return session.get("PointGrades").requiredArray("Grades").objects().mapNotNull { grade ->
             val id = grade.long("Id") ?: return@mapNotNull null
             val semester = grade.int("Semester") ?: return@mapNotNull null
             val subjectId = grade.refId("Subject") ?: return@mapNotNull null
@@ -134,7 +135,7 @@ internal class GradeParser(private val session: SyncSession, private val profile
         val teachers = session.teachers()
         val skills = session.byId("DescriptiveTextGrades/Skills", "Skills")
 
-        return session.get("DescriptiveGrades").array("Grades")?.objects().orEmpty().mapNotNull { grade ->
+        return session.get("DescriptiveGrades").requiredArray("Grades").objects().mapNotNull { grade ->
             val id = grade.long("Id") ?: return@mapNotNull null
             val semester = grade.int("Semester") ?: return@mapNotNull null
             val subjectId = grade.refId("Subject") ?: return@mapNotNull null

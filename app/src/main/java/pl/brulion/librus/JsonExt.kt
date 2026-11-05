@@ -14,6 +14,13 @@ private fun JsonObject.primitive(key: String): JsonPrimitive? =
 
 fun JsonObject.obj(key: String): JsonObject? = this[key] as? JsonObject
 fun JsonObject.array(key: String): JsonArray? = this[key] as? JsonArray
+
+/**
+ * The list a section is built from. Librus sends an empty list as `[]`, so a missing key means
+ * the response changed (or was cut short), and must not read as "nothing here".
+ */
+fun JsonObject.requiredArray(key: String): JsonArray =
+    array(key) ?: throw LibrusException(LibrusException.Reason.FORM_CHANGED, "response has no $key list")
 fun JsonObject.string(key: String): String? = primitive(key)?.content
 fun JsonObject.int(key: String): Int? = primitive(key)?.intOrNull
 fun JsonObject.long(key: String): Long? = primitive(key)?.longOrNull
