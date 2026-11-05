@@ -5,23 +5,27 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
+import kotlinx.coroutines.launch
 import pl.brulion.R
 
 /** "Zgłoś" next to an error. */
 @Composable
 fun ReportButton(reason: String) {
     val diagnostics = appContainer().diagnostics
-    TextButton(onClick = { diagnostics.send(reason) }) { Text(stringResource(R.string.report)) }
+    val scope = rememberCoroutineScope()
+    TextButton(onClick = { scope.launch { diagnostics.send(reason) } }) { Text(stringResource(R.string.report)) }
 }
 
 /** After a crash, offers to send the saved report once. */
 @Composable
 fun CrashReportDialog() {
     val diagnostics = appContainer().diagnostics
+    val scope = rememberCoroutineScope()
     var visible by remember { mutableStateOf(diagnostics.hasCrashReport()) }
     if (!visible) return
     AlertDialog(
@@ -31,7 +35,7 @@ fun CrashReportDialog() {
         confirmButton = {
             TextButton(onClick = {
                 visible = false
-                diagnostics.send("Awaria aplikacji")
+                scope.launch { diagnostics.send("Awaria aplikacji") }
             }) { Text(stringResource(R.string.report_send)) }
         },
         dismissButton = {

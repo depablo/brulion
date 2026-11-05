@@ -7,6 +7,9 @@ import android.net.Uri
 import android.os.Build
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import pl.brulion.BuildConfig
 import java.io.File
 import java.io.PrintWriter
@@ -68,7 +71,46 @@ class Diagnostics(private val context: Context) {
      * Each mail app is targeted by package: a `mailto:` selector on ACTION_SEND fell through
      * to the full share sheet on a Pixel with Gmail.
      */
-    fun send(reason: String) {
+    /**
+     * Suspends: writing the report and looking up mail apps are file and package-manager calls,
+     * so they run off the main thread. Starting the activity and the toast stay on the caller's thread.
+     */
+    suspend fun send(reason: String) {
+        val (send, mailIntents) = try {
+            withContext(Dispatchers.IO) { prepareReport(reason) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // A full or unwritable cache must not crash the screen the user tapped from.
+            Toast.makeText(context, "Nie udało się przygotować raportu", Toast.LENGTH_LONG).show()
+            return
+        }
+        when {
+            mailIntents.size == 1 -> context.startActivity(mailIntents.single())
+            mailIntents.size > 1 -> context.startActivity(
+                // A chooser limited to mail apps: the first one plus the rest as extra targets.
+                Intent.createChooser(mailIntents.first(), "Brulion: diagnostyka")
+                    .putExtra(Intent.EXTRA_INITIAL_INTENTS, mailIntents.drop(1).toTypedArray())
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+            else -> {
+                Toast.makeText(context, "Brak aplikacji pocztowej. Wyślij plik na $EMAIL", Toast.LENGTH_LONG).show()
+                context.startActivity(
+                    Intent.createChooser(send, "Brulion: diagnostyka").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            }
+        }
+        // Whether the mail actually goes out is unknown; keep the crash for the next report too.
+        withContext(Dispatchers.IO) {
+            if (crashFile.isFile) {
+                sentCrashFile.delete()
+                crashFile.renameTo(sentCrashFile)
+            }
+        }
+    }
+
+    /** The report as a shared file, and the mail intent for each mail app that can take it. */
+    private fun prepareReport(reason: String): Pair<Intent, List<Intent>> {
         val crash = crashFile.takeIf { it.isFile }
             ?: sentCrashFile.takeIf { it.isFile && System.currentTimeMillis() - it.lastModified() < SENT_CRASH_KEPT_MS }
         val text = crash?.let { it.readText() + "\n\n" + report(reason) } ?: report(reason)
@@ -86,26 +128,7 @@ class Diagnostics(private val context: Context) {
         send.clipData = ClipData.newRawUri(file.name, uri)
         val mailIntents = mailApps().map { Intent(send).setPackage(it) }
             .filter { context.packageManager.queryIntentActivities(it, 0).isNotEmpty() }
-        when {
-            mailIntents.size == 1 -> context.startActivity(mailIntents.single())
-            mailIntents.size > 1 -> context.startActivity(
-                // A chooser limited to mail apps: the first one plus the rest as extra targets.
-                Intent.createChooser(mailIntents.first(), "Brulion: diagnostyka")
-                    .putExtra(Intent.EXTRA_INITIAL_INTENTS, mailIntents.drop(1).toTypedArray())
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
-            else -> {
-                Toast.makeText(context, "Brak aplikacji pocztowej. Wyślij plik na $EMAIL", Toast.LENGTH_LONG).show()
-                context.startActivity(
-                    Intent.createChooser(send, "Brulion: diagnostyka").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                )
-            }
-        }
-        // Whether the mail actually goes out is unknown; keep the crash for the next report too.
-        if (crashFile.isFile) {
-            sentCrashFile.delete()
-            crashFile.renameTo(sentCrashFile)
-        }
+        return send to mailIntents
     }
 
     private fun report(reason: String): String = buildString {

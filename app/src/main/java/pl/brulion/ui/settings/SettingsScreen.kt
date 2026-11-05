@@ -46,6 +46,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -80,6 +81,7 @@ private fun openUrl(context: Context, url: String) {
 fun SettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val container = appContainer()
+    val scope = rememberCoroutineScope()
     val settings = container.settings
     val enabled by settings.summaryEnabled.collectAsStateWithLifecycle()
     val time by settings.summaryTime.collectAsStateWithLifecycle()
@@ -192,7 +194,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 headlineContent = { Text(stringResource(R.string.settings_send_diagnostics)) },
                 supportingContent = { Text(stringResource(R.string.settings_send_diagnostics_description, Diagnostics.EMAIL)) },
                 leadingContent = { Icon(Icons.Outlined.BugReport, null) },
-                modifier = Modifier.clickable { container.diagnostics.send("Zgłoszenie z ustawień") },
+                modifier = Modifier.clickable { scope.launch { container.diagnostics.send("Zgłoszenie z ustawień") } },
             )
             Text(
                 text = stringResource(R.string.settings_about_section),
