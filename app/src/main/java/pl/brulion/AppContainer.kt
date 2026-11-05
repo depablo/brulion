@@ -51,7 +51,7 @@ class AppContainer(context: Context) {
     private val http = LibrusHttp(debug = BuildConfig.DEBUG, onRequest = diagnostics::log)
     val database = BrulionDatabase.create(context)
     val librusApi = LibrusApi(http)
-    val accounts = AccountRepository(database, PortalAuth(http), librusApi)
+    val accounts = AccountRepository(database, PortalAuth(http), librusApi, context.filesDir)
     private val messageSessions = MessageSessions(accounts, librusApi, LibrusMessages(http))
     val settings = Settings(context)
     val announcements = Announcements(database, settings)

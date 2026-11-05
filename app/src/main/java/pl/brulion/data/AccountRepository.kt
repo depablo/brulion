@@ -1,9 +1,11 @@
 package pl.brulion.data
 
 import androidx.room.withTransaction
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import pl.brulion.data.db.AccountEntity
 import pl.brulion.data.db.BrulionDatabase
 import pl.brulion.data.db.ProfileEntity
@@ -13,11 +15,14 @@ import pl.brulion.librus.LibrusException
 import pl.brulion.librus.LibrusException.Reason
 import pl.brulion.librus.PortalAuth
 import pl.brulion.librus.nowSeconds
+import java.io.File
 
 class AccountRepository(
     private val db: BrulionDatabase,
     private val portal: PortalAuth,
     private val api: LibrusApi,
+    /** App files; downloaded attachments live under `attachments/<profileId>` here. */
+    private val filesDir: File,
 ) {
     private val accounts = db.accountDao()
     private val profiles = db.profileDao()
@@ -81,6 +86,8 @@ class AccountRepository(
             profiles.delete(profileId)
             accounts.deleteOrphans()
         }
+        // Attachments are the student's messages too; the database rows alone would leave the files behind.
+        withContext(Dispatchers.IO) { File(filesDir, "attachments/$profileId").deleteRecursively() }
     }
 
     /** Runs [block] with a valid API token, refreshing it once if Librus reports it as expired. */
