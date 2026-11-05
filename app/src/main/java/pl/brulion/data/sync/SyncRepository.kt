@@ -76,7 +76,14 @@ class SyncRepository(
 
         if (results.values.any { it is SectionResult.Ok }) {
             db.profileDao().setLastSyncAt(profileId, nowSeconds())
-            feed.record(profile)
+            // The data is already saved; a failure in the feed (or its notification) must not mark the sync as failed.
+            try {
+                feed.record(profile)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                diagnostics.log("feed record $profileId failed", e)
+            }
         }
         SyncReport(results)
     }
