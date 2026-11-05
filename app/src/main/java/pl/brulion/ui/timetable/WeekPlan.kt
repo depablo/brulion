@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.EventBusy
+import androidx.compose.material.icons.outlined.Print
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -76,6 +77,7 @@ fun WeekPlan(profileId: Long, modifier: Modifier = Modifier) {
     val db = appContainer().database
     val today = rememberToday()
     var monday by remember { mutableStateOf(timetableWeekStart(today)) }
+    var printing by remember { mutableStateOf(false) }
     val sunday = monday.plusDays(6)
     val lessons by remember(profileId, monday) { db.timetableDao().observeRange(profileId, monday, sunday) }
         .collectAsStateWithLifecycle(null)
@@ -91,7 +93,14 @@ fun WeekPlan(profileId: Long, modifier: Modifier = Modifier) {
     val days = remember(all, monday) { weekDays(monday, all) }
 
     Column(modifier.padding(horizontal = 8.dp)) {
-        WeekSwitcher(monday, sunday, onPrevious = { monday = monday.minusWeeks(1) }, onNext = { monday = monday.plusWeeks(1) })
+        WeekSwitcher(
+            monday,
+            sunday,
+            onPrevious = { monday = monday.minusWeeks(1) },
+            onNext = { monday = monday.plusWeeks(1) },
+            onPrint = { printing = true },
+        )
+        if (printing) PrintPlanDialog(monday, profileId) { printing = false }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.width(52.dp))
             days.forEach { day ->
@@ -123,7 +132,7 @@ fun WeekPlan(profileId: Long, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun WeekSwitcher(monday: LocalDate, sunday: LocalDate, onPrevious: () -> Unit, onNext: () -> Unit) {
+private fun WeekSwitcher(monday: LocalDate, sunday: LocalDate, onPrevious: () -> Unit, onNext: () -> Unit, onPrint: (() -> Unit)? = null) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onPrevious) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.week_previous))
@@ -134,6 +143,9 @@ private fun WeekSwitcher(monday: LocalDate, sunday: LocalDate, onPrevious: () ->
             textAlign = TextAlign.Center,
             modifier = Modifier.weight(1f),
         )
+        if (onPrint != null) {
+            IconButton(onClick = onPrint) { Icon(Icons.Outlined.Print, stringResource(R.string.print_plan_title)) }
+        }
         IconButton(onClick = onNext) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.week_next))
         }
@@ -143,11 +155,13 @@ private fun WeekSwitcher(monday: LocalDate, sunday: LocalDate, onPrevious: () ->
 @Composable
 private fun WeekCell(lessons: List<TimetableLessonEntity>, modifier: Modifier) {
     val colors = MaterialTheme.colorScheme
-    val background = when {
-        lessons.isEmpty() -> Color.Transparent
-        lessons.all { it.state == LessonState.CANCELLED } -> colors.errorContainer
-        lessons.any { it.state == LessonState.SUBSTITUTION || it.state == LessonState.MOVED_HERE } -> colors.tertiaryContainer
-        else -> colors.secondaryContainer
+    // Each background comes with its own "on" color; text on a container colour must come from the same family.
+    val (background, content) = when {
+        lessons.isEmpty() -> Color.Transparent to colors.onSurface
+        lessons.all { it.state == LessonState.CANCELLED } -> colors.errorContainer to colors.onErrorContainer
+        lessons.any { it.state == LessonState.SUBSTITUTION || it.state == LessonState.MOVED_HERE } ->
+            colors.tertiaryContainer to colors.onTertiaryContainer
+        else -> colors.secondaryContainer to colors.onSecondaryContainer
     }
     Box(modifier.padding(2.dp).fillMaxHeight().background(background, RoundedCornerShape(6.dp)).padding(4.dp)) {
         if (lessons.isNotEmpty()) {
@@ -158,13 +172,13 @@ private fun WeekCell(lessons: List<TimetableLessonEntity>, modifier: Modifier) {
                         text = lesson.subjectName ?: "–",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Medium,
-                        color = if (crossedOut) colors.onSurfaceVariant else colors.onSurface,
+                        color = if (crossedOut) content.copy(alpha = 0.7f) else content,
                         textDecoration = if (crossedOut) TextDecoration.LineThrough else null,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                     lesson.classroom?.takeIf { it.isNotBlank() }?.let {
-                        Text(it, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, maxLines = 1)
+                        Text(it, style = MaterialTheme.typography.labelSmall, color = content.copy(alpha = 0.8f), maxLines = 1)
                     }
                 }
             }
