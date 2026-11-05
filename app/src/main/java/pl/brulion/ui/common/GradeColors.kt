@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import pl.brulion.data.db.GradeEntity
+import pl.brulion.data.db.GradeKind
 
 // Grades are colored by value rather than by Librus category, so a glance tells how it went.
 private val GradeScale = listOf(
@@ -31,9 +32,24 @@ private val GradeScale = listOf(
 fun gradeColor(numericValue: Double?): Color? =
     numericValue?.takeIf { it >= 1.0 }?.let { GradeScale[(it.toInt() - 1).coerceIn(0, GradeScale.lastIndex)] }
 
+/**
+ * Point grades are scored in points, so their color comes from the share of the maximum,
+ * mapped onto the same 1–6 scale: 20/20 is a 6, 1/20 a 1.
+ */
+internal fun gradeColor(grade: GradeEntity): Color? =
+    when (grade.kind) {
+        GradeKind.POINT -> gradeColor(pointsOnGradeScale(grade.numericValue, grade.maxValue))
+        else -> gradeColor(grade.numericValue)
+    }
+
+/** Points as a value on the 1–6 scale; null when the maximum is unknown. */
+internal fun pointsOnGradeScale(points: Double?, max: Double?): Double? =
+    if (points == null || max == null || max <= 0.0) null
+    else 1.0 + (points / max).coerceIn(0.0, 1.0) * 5.0
+
 @Composable
 fun GradeChip(grade: GradeEntity, modifier: Modifier = Modifier) {
-    val color = gradeColor(grade.numericValue)
+    val color = gradeColor(grade)
     Box(
         modifier = modifier
             .alpha(if (grade.improvedById != null) 0.45f else 1f)
