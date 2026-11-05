@@ -10,7 +10,11 @@ import okhttp3.Request
 import pl.brulion.librus.LibrusException.Reason
 
 /** Librus portal (Konto Librus) OAuth and the list of linked Synergia accounts. */
-class PortalAuth(private val http: LibrusHttp) {
+class PortalAuth(
+    private val http: LibrusHttp,
+    private val tokenUrl: String = Librus.PORTAL_TOKEN_URL,
+    private val apiUrl: String = Librus.PORTAL_API_URL,
+) {
 
     class Tokens(val accessToken: String, val refreshToken: String, val expiresAt: Long)
 
@@ -40,7 +44,7 @@ class PortalAuth(private val http: LibrusHttp) {
     )
 
     private suspend fun token(body: FormBody): Tokens {
-        val result = http.execute(Request.Builder().url(Librus.PORTAL_TOKEN_URL).post(body).build())
+        val result = http.execute(Request.Builder().url(tokenUrl).post(body).build())
         val json = result.json() ?: throw LibrusException(Reason.UNKNOWN, "HTTP ${result.code}")
         if (result.code != 200) {
             val error = json.string("hint") ?: json.string("error")
@@ -100,7 +104,7 @@ class PortalAuth(private val http: LibrusHttp) {
     private suspend fun get(portalToken: String, endpoint: String): JsonObject {
         val result = http.execute(
             Request.Builder()
-                .url(Librus.PORTAL_API_URL + endpoint)
+                .url(apiUrl + endpoint)
                 .header("Authorization", "Bearer $portalToken")
                 .build()
         )
