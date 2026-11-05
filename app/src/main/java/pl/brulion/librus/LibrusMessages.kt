@@ -84,6 +84,7 @@ class LibrusMessages(private val http: LibrusHttp) {
         /** Replies to message [id] with [text], keeping the subject Librus proposes ("Re: …"). */
         suspend fun reply(id: Long, text: String) {
             val page = http.execute(browser("${Librus.SYNERGIA_URL}/wiadomosci/3/5/$id"), web)
+            if (endedOnLoginPage(page.finalUrl)) throw LibrusException(Reason.TOKEN_EXPIRED, "reply form: session ended")
             val fields = replyFormFields(page.body)
             if (page.code != 200 || "DoKogo" !in fields) {
                 // A message form without the known fields means Librus changed it; no form at all,
@@ -133,6 +134,7 @@ class LibrusMessages(private val http: LibrusHttp) {
                 web,
             )
             if (result.code != 200) throw LibrusException(Reason.UNKNOWN, "recipients: HTTP ${result.code}")
+            if (endedOnLoginPage(result.finalUrl)) throw LibrusException(Reason.TOKEN_EXPIRED, "recipients: session ended")
             return parseRecipients(result.body)
         }
 
@@ -160,11 +162,14 @@ class LibrusMessages(private val http: LibrusHttp) {
         private suspend fun composePage(): String =
             composePage?.takeIf { nowSeconds() - composePageAt < COMPOSE_PAGE_TTL } ?: freshComposePage()
 
-        private suspend fun freshComposePage(): String =
-            http.execute(browser("${Librus.SYNERGIA_URL}/wiadomosci/2/5"), web).body.also {
+        private suspend fun freshComposePage(): String {
+            val result = http.execute(browser("${Librus.SYNERGIA_URL}/wiadomosci/2/5"), web)
+            if (endedOnLoginPage(result.finalUrl)) throw LibrusException(Reason.TOKEN_EXPIRED, "compose page: session ended")
+            return result.body.also {
                 composePage = it
                 composePageAt = nowSeconds()
             }
+        }
 
         /**
          * Without the confirmation the message may still have gone out (e.g. the response timed
@@ -282,12 +287,20 @@ internal fun formFields(html: String, anchor: String): Map<String, String> {
 private fun attribute(tag: String, name: String): String? =
     Regex("\\b$name\\s*=\\s*\"([^\"]*)\"", RegexOption.IGNORE_CASE).find(tag)?.groupValues?.get(1)
 
+/**
+ * An expired Synergia session answers with the login page and a 200 status, so the page's
+ * content looks empty rather than failed. Best effort: a false positive only costs one retry.
+ */
+internal fun endedOnLoginPage(finalUrl: String): Boolean =
+    finalUrl.substringBefore('?').let { "/loguj" in it || "portal.librus.pl" in it }
+
 internal fun decodeHtmlEntities(text: String): String =
     Regex("&(#x?[0-9a-fA-F]+|[a-zA-Z]+);").replace(text) { match ->
         val entity = match.groupValues[1]
         if (entity.startsWith("#")) {
             val code = if (entity.startsWith("#x")) entity.drop(2).toIntOrNull(16) else entity.drop(1).toIntOrNull()
-            code?.let { String(Character.toChars(it)) } ?: match.value
+            // Out-of-range code points (e.g. &#99999999;) would throw in toChars; keep them as written.
+            code?.takeIf { Character.isValidCodePoint(it) }?.let { String(Character.toChars(it)) } ?: match.value
         } else {
             NAMED_ENTITIES[entity] ?: match.value
         }
@@ -312,7 +325,7 @@ internal fun recipientGroups(html: String): List<RecipientGroup> =
         if (type == "grupa") return@mapNotNull null
         val args = call.value.substringAfter('(').substringBefore(')').split(',').map { it.trim() }
         val id = attribute(tag, "id")
-        val label = id?.let { Regex("<label[^>]*for=\"$it\"[^>]*>([\\s\\S]*?)</label>", RegexOption.IGNORE_CASE).find(html) }
+        val label = id?.let { Regex("<label[^>]*for=\"${Regex.escape(it)}\"[^>]*>([\\s\\S]*?)</label>", RegexOption.IGNORE_CASE).find(html) }
             ?.groupValues?.get(1)?.let(::stripTags)
         RecipientGroup(type = type, label = label?.ifBlank { null } ?: type, classId = args.getOrNull(3)?.takeIf { it.all(Char::isDigit) })
     }.distinctBy { it.type }.toList()
