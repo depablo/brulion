@@ -240,7 +240,7 @@ fun EventsScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun DateHeader(date: LocalDate) {
+internal fun DateHeader(date: LocalDate) {
     Text(
         text = date.formatLong(),
         style = MaterialTheme.typography.labelLarge,

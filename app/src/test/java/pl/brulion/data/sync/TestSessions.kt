@@ -21,9 +21,9 @@ internal fun <T> withSession(
     block: suspend (SyncSession) -> T,
 ): T = runBlocking {
     supervisorScope {
-        block(SyncSession(this) { endpoint ->
+        block(SyncSession(this, { endpoint ->
             if (endpoint in failing) throw IOException("HTTP 500")
             responses[endpoint] ?: error("unexpected request: $endpoint")
-        })
+        }))
     }
 }

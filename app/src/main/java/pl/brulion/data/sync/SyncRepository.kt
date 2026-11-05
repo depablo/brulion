@@ -29,7 +29,7 @@ import pl.brulion.librus.int
 import pl.brulion.librus.objects
 import pl.brulion.librus.string
 
-enum class SyncSection { GRADES, ANNOUNCEMENTS, ATTENDANCE, EVENTS, NOTES, LUCKY_NUMBER, TIMETABLE, MESSAGES }
+enum class SyncSection { GRADES, ANNOUNCEMENTS, ATTENDANCE, EVENTS, NOTES, LUCKY_NUMBER, TIMETABLE, MESSAGES, HOMEWORK }
 
 sealed interface SectionResult {
     /** [note] is something odd but not fatal, worth a line in the diagnostics. */
@@ -116,6 +116,14 @@ class SyncRepository(
         SyncSection.EVENTS -> {
             val items = EventParser(session, profileId).parse()
             val dao = db.eventDao()
+            val stamper = Stamper(dao.seen(profileId), newStamp)
+            dao.replaceAll(profileId, items.map { it.copy(firstSeenAt = stamper.stamp(it.id.toString())) })
+            SectionResult.Ok(items.size, stamper.newCount)
+        }
+
+        SyncSection.HOMEWORK -> {
+            val items = HomeworkParser(session, profileId).parse()
+            val dao = db.homeworkDao()
             val stamper = Stamper(dao.seen(profileId), newStamp)
             dao.replaceAll(profileId, items.map { it.copy(firstSeenAt = stamper.stamp(it.id.toString())) })
             SectionResult.Ok(items.size, stamper.newCount)

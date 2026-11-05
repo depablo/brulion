@@ -191,6 +191,26 @@ data class TimetableLessonEntity(
     val otherLessonNo: Int?,
 )
 
+/** A homework assignment from Synergia's HomeWorkAssignments, kept until the next sync replaces it. */
+@Entity(
+    tableName = "homework",
+    primaryKeys = ["profileId", "id"],
+    foreignKeys = [ForeignKey(ProfileEntity::class, ["id"], ["profileId"], onDelete = ForeignKey.CASCADE)],
+)
+data class HomeworkEntity(
+    val profileId: Long,
+    val id: Long,
+    /** The day the assignment is due. */
+    val dueDate: LocalDate,
+    val addedDate: LocalDate?,
+    val subjectName: String?,
+    val teacherName: String?,
+    val topic: String,
+    /** The assignment text; may be empty when only the topic was given. */
+    val content: String,
+    val firstSeenAt: Long,
+)
+
 @Entity(
     tableName = "messages",
     primaryKeys = ["profileId", "id"],

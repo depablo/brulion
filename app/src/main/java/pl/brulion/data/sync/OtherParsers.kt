@@ -4,10 +4,12 @@
  */
 package pl.brulion.data.sync
 
+import kotlinx.serialization.json.JsonObject
 import pl.brulion.data.db.AnnouncementEntity
 import pl.brulion.data.db.AttendanceCategory
 import pl.brulion.data.db.AttendanceEntity
 import pl.brulion.data.db.EventEntity
+import pl.brulion.data.db.HomeworkEntity
 import pl.brulion.data.db.LuckyNumberEntity
 import pl.brulion.data.db.NoteEntity
 import pl.brulion.data.db.NotePolarity
@@ -44,6 +46,35 @@ internal class AnnouncementParser(private val session: SyncSession, private val 
             )
         }
     }
+}
+
+internal class HomeworkParser(private val session: SyncSession, private val profileId: Long) {
+    suspend fun parse(): List<HomeworkEntity> = homeworkFrom(
+        items = session.getV3("HomeWorkAssignments").requiredArray("HomeWorkAssignments").objects(),
+        profileId = profileId,
+        subjects = session.subjects(),
+        teachers = session.teachers(),
+    )
+}
+
+/** Homework from HomeWorkAssignments; an item without an id or a due date can't be shown and is skipped. */
+internal fun homeworkFrom(
+    items: List<JsonObject>,
+    profileId: Long,
+    subjects: Map<Long, String>,
+    teachers: Map<Long, String>,
+): List<HomeworkEntity> = items.mapNotNull { item ->
+    HomeworkEntity(
+        profileId = profileId,
+        id = item.long("Id") ?: return@mapNotNull null,
+        dueDate = parseLibrusDate(item.string("DueDate")) ?: return@mapNotNull null,
+        addedDate = parseLibrusDate(item.string("Date")),
+        subjectName = item.refId("Subject")?.let(subjects::get),
+        teacherName = item.refId("Teacher")?.let(teachers::get),
+        topic = item.string("Topic").orEmpty().normalizeSpaces(),
+        content = item.string("Text").orEmpty().trim(),
+        firstSeenAt = 0,
+    )
 }
 
 internal class AttendanceParser(private val session: SyncSession, private val profileId: Long) {

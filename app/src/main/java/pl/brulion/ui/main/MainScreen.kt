@@ -85,7 +85,7 @@ enum class MainTab(@StringRes val label: Int, val icon: ImageVector) {
 }
 
 /** Secondary screens reachable from the main screen. */
-enum class MoreDestination { MORE, ANNOUNCEMENTS, EVENTS, ATTENDANCE, NOTES, ACCOUNTS, SETTINGS }
+enum class MoreDestination { MORE, ANNOUNCEMENTS, EVENTS, HOMEWORK, ATTENDANCE, NOTES, ACCOUNTS, SETTINGS }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -36,6 +36,7 @@ import pl.brulion.ui.messages.ReplyViewModel
 import pl.brulion.ui.more.AnnouncementsScreen
 import pl.brulion.ui.more.AttendanceScreen
 import pl.brulion.ui.more.EventsScreen
+import pl.brulion.ui.more.HomeworkScreen
 import pl.brulion.ui.more.NotesScreen
 import pl.brulion.ui.settings.SettingsScreen
 import java.time.LocalDate
@@ -46,6 +47,7 @@ import java.time.LocalDate
 @Serializable object AccountsRoute
 @Serializable object AnnouncementsRoute
 @Serializable object EventsRoute
+@Serializable object HomeworkRoute
 @Serializable object AttendanceRoute
 @Serializable object NotesRoute
 @Serializable object SettingsRoute
@@ -70,6 +72,7 @@ fun BrulionNavHost(startDestination: Any, navController: NavHostController = rem
                 MoreDestination.MORE -> MoreRoute
                 MoreDestination.ANNOUNCEMENTS -> AnnouncementsRoute
                 MoreDestination.EVENTS -> EventsRoute
+                MoreDestination.HOMEWORK -> HomeworkRoute
                 MoreDestination.ATTENDANCE -> AttendanceRoute
                 MoreDestination.NOTES -> NotesRoute
                 MoreDestination.ACCOUNTS -> AccountsRoute
@@ -145,6 +148,7 @@ fun BrulionNavHost(startDestination: Any, navController: NavHostController = rem
             }
             composable<AnnouncementsRoute> { AnnouncementsScreen(back) }
             composable<EventsRoute> { EventsScreen(back) }
+            composable<HomeworkRoute> { HomeworkScreen(back) }
             composable<AttendanceRoute> {
                 AttendanceScreen(
                     onBack = back,

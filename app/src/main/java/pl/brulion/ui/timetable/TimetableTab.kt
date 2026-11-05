@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -12,6 +14,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
@@ -19,8 +22,10 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -44,9 +49,26 @@ import pl.brulion.ui.events.EventRow
 import java.time.DayOfWeek
 import java.time.LocalDate
 
+/** The plan of one student: a day at a time, or the whole week as a grid. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimetableTab(profileId: Long) {
+    var week by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize()) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilterChip(selected = !week, onClick = { week = false }, label = { Text(stringResource(R.string.timetable_view_day)) })
+            FilterChip(selected = week, onClick = { week = true }, label = { Text(stringResource(R.string.timetable_view_week)) })
+        }
+        if (week) WeekPlan(profileId, Modifier.weight(1f)) else DayPlan(profileId, Modifier.weight(1f))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DayPlan(profileId: Long, modifier: Modifier) {
     val db = appContainer().database
     val today = rememberToday()
     val monday = remember(today) { timetableWeekStart(today) }
@@ -62,7 +84,7 @@ fun TimetableTab(profileId: Long) {
     val pager = rememberPagerState(days.indexOfFirst { it >= today }.coerceAtLeast(0)) { days.size }
     val scope = rememberCoroutineScope()
 
-    Column(Modifier.fillMaxSize()) {
+    Column(modifier) {
         PrimaryScrollableTabRow(selectedTabIndex = pager.currentPage, edgePadding = 8.dp) {
             days.forEachIndexed { index, day ->
                 Tab(

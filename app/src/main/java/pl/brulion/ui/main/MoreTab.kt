@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Assignment
 import androidx.compose.material.icons.outlined.Campaign
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.FactCheck
@@ -32,6 +33,7 @@ private data class MoreEntry(val destination: MoreDestination, val label: Int, v
 private val Entries = listOf(
     MoreEntry(MoreDestination.ANNOUNCEMENTS, R.string.section_announcements, Icons.Outlined.Campaign),
     MoreEntry(MoreDestination.EVENTS, R.string.section_events, Icons.Outlined.Event),
+    MoreEntry(MoreDestination.HOMEWORK, R.string.section_homework, Icons.Outlined.Assignment),
     MoreEntry(MoreDestination.ATTENDANCE, R.string.section_attendance, Icons.Outlined.FactCheck),
     MoreEntry(MoreDestination.NOTES, R.string.section_notes, Icons.Outlined.StickyNote2),
     MoreEntry(MoreDestination.ACCOUNTS, R.string.accounts_title, Icons.Outlined.ManageAccounts),

@@ -50,6 +50,7 @@
     <string name="section_announcements">Ogłoszenia</string>
     <string name="section_attendance">Frekwencja</string>
     <string name="section_events">Terminarz</string>
+    <string name="section_homework">Zadania domowe</string>
     <string name="section_notes">Uwagi</string>
     <string name="section_lucky_number">Szczęśliwy numerek</string>
     <string name="section_timetable">Plan lekcji (2 tygodnie)</string>
@@ -104,6 +105,10 @@
     <string name="lesson_moved_to">Przeniesiona na %1$s, lekcja %2$d</string>
     <string name="lesson_moved_from">Przeniesiona z %1$s, lekcja %2$d</string>
     <string name="timetable_empty">Brak lekcji tego dnia</string>
+    <string name="timetable_view_day">Dzień</string>
+    <string name="timetable_view_week">Tydzień</string>
+    <string name="week_previous">Poprzedni tydzień</string>
+    <string name="week_next">Następny tydzień</string>
 
     <string name="grades_empty">Jeszcze nie ma ocen</string>
     <string name="grades_semester">Semestr %1$d</string>
@@ -180,6 +185,11 @@
     <string name="events_empty">Terminarz jest pusty</string>
     <string name="events_none_upcoming">Nic zaplanowanego.</string>
     <string name="events_past">Minione</string>
+    <string name="homework_empty">Brak zadań domowych</string>
+    <string name="homework_none_upcoming">Nic zadanego na kolejne dni.</string>
+    <string name="homework_past">Minione</string>
+    <string name="homework_no_subject">Zadanie domowe</string>
+    <string name="homework_added">Zadane %s</string>
     <string name="notes_empty">Brak uwag</string>
     <string name="attendance_empty">Brak wpisów frekwencji</string>
     <string name="attendance_all_present">Same obecności.</string>

@@ -25,6 +25,10 @@ class LibrusApi(private val http: LibrusHttp) {
     suspend fun get(token: String, endpoint: String, post: Boolean = false): JsonObject =
         request(token, Librus.API_URL, endpoint, if (post) ByteArray(0).toRequestBody() else null)
 
+    /** GET from the 3.0 API, where Librus keeps some newer endpoints such as HomeWorkAssignments. */
+    suspend fun getV3(token: String, endpoint: String): JsonObject =
+        request(token, Librus.API_V3_URL, endpoint, null)
+
     /** POSTs [body] as JSON to the 3.0 API. */
     suspend fun post(token: String, endpoint: String, body: JsonObject): JsonObject =
         request(token, Librus.API_V3_URL, endpoint, body.toString().toRequestBody(JSON_MEDIA_TYPE))

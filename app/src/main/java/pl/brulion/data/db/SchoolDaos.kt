@@ -68,6 +68,27 @@ interface AnnouncementDao {
 }
 
 @Dao
+interface HomeworkDao {
+    @Query("SELECT CAST(id AS TEXT) AS `key`, firstSeenAt FROM homework WHERE profileId = :profileId")
+    suspend fun seen(profileId: Long): List<SeenRow>
+
+    @Query("DELETE FROM homework WHERE profileId = :profileId")
+    suspend fun deleteAll(profileId: Long)
+
+    @Insert
+    suspend fun insertAll(items: List<HomeworkEntity>)
+
+    @Transaction
+    suspend fun replaceAll(profileId: Long, items: List<HomeworkEntity>) {
+        deleteAll(profileId)
+        insertAll(items)
+    }
+
+    @Query("SELECT * FROM homework WHERE profileId = :profileId ORDER BY dueDate DESC, id DESC")
+    fun observeAll(profileId: Long): Flow<List<HomeworkEntity>>
+}
+
+@Dao
 interface AttendanceDao {
     @Query("SELECT * FROM attendance WHERE profileId = :profileId AND addedAt >= :since")
     suspend fun addedSince(profileId: Long, since: Long): List<AttendanceEntity>

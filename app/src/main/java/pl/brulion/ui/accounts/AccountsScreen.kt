@@ -264,6 +264,7 @@ private val SyncSection.label: Int
         SyncSection.LUCKY_NUMBER -> R.string.section_lucky_number
         SyncSection.TIMETABLE -> R.string.section_timetable
         SyncSection.MESSAGES -> R.string.section_messages
+        SyncSection.HOMEWORK -> R.string.section_homework
     }
 
 @Composable

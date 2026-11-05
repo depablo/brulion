@@ -25,20 +25,31 @@ import pl.brulion.librus.string
 class SyncSession(
     private val scope: CoroutineScope,
     private val fetch: suspend (endpoint: String) -> JsonObject,
+    /** Endpoints that Librus serves from the 3.0 API, e.g. HomeWorkAssignments. */
+    private val fetchV3: suspend (endpoint: String) -> JsonObject = fetch,
 ) {
     constructor(scope: CoroutineScope, profileId: Long, accounts: AccountRepository, api: LibrusApi) :
-        this(scope, { endpoint -> accounts.withApi(profileId) { token -> api.get(token, endpoint) } })
+        this(
+            scope,
+            { endpoint -> accounts.withApi(profileId) { token -> api.get(token, endpoint) } },
+            { endpoint -> accounts.withApi(profileId) { token -> api.getV3(token, endpoint) } },
+        )
 
     private val cache = mutableMapOf<String, Deferred<JsonObject>>()
     private val cacheLock = Mutex()
     // Be gentle with Librus: a handful of requests in flight is plenty.
     private val network = Semaphore(4)
 
-    suspend fun get(endpoint: String): JsonObject {
+    suspend fun get(endpoint: String): JsonObject = cached("2.0/$endpoint") { fetch(endpoint) }
+
+    /** Like [get], from the 3.0 API. */
+    suspend fun getV3(endpoint: String): JsonObject = cached("3.0/$endpoint") { fetchV3(endpoint) }
+
+    private suspend fun cached(key: String, load: suspend () -> JsonObject): JsonObject {
         val deferred = cacheLock.withLock {
-            cache.getOrPut(endpoint) {
+            cache.getOrPut(key) {
                 scope.async {
-                    network.withPermit { fetch(endpoint) }
+                    network.withPermit { load() }
                 }
             }
         }
