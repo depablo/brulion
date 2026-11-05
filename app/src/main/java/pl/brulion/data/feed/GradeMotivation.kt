@@ -1,6 +1,7 @@
 package pl.brulion.data.feed
 
 import pl.brulion.data.db.FeedEntryEntity
+import pl.brulion.data.db.GradeKind
 import pl.brulion.data.db.FeedKind
 import kotlin.random.Random
 
@@ -10,9 +11,15 @@ import kotlin.random.Random
  * anyone; low grades encourage instead of blaming.
  */
 object GradeMotivation {
-    /** The text for [entry], or null when it isn't a grade from 1 to 6 (points, "np", "+"). */
+    /**
+     * The text for [entry], or null when it isn't a regular grade from 1 to 6. Point and descriptive
+     * grades aren't marks on that scale, and proposed or final grades ("Ocena roczna") carry a
+     * different meaning than the day-to-day ones these texts were written for.
+     */
     fun forEntry(entry: FeedEntryEntity, parent: Boolean): String? {
         if (entry.kind != FeedKind.GRADE) return null
+        // refKey is "<GradeKind>:<id>", see FeedEntries.kt.
+        if (!entry.refKey.startsWith("${GradeKind.NORMAL}:") || !entry.title.startsWith(REGULAR_TITLE)) return null
         val grade = gradeOf(entry.title) ?: return null
         val texts = (if (parent) Parent else Student).getValue(grade)
         // Seeded by the grade, so the same grade keeps its text if notified again.
@@ -26,6 +33,7 @@ object GradeMotivation {
     }
 
     private val GradeValue = Regex("([1-6])[+-]?")
+    private const val REGULAR_TITLE = "Nowa ocena: "
 
     internal val Student: Map<Int, List<String>> = mapOf(
         6 to listOf(
@@ -106,7 +114,7 @@ object GradeMotivation {
         6 to listOf(
             "Wybitny wynik – gratulacje!",
             "Celująca ocena, ogromny sukces.",
-            "Zdolne dziecko!",
+            "Ogromne zdolności, pełne uznanie!",
             "Najwyższa ocena – jest z czego być dumnym.",
             "Wyjątkowe osiągnięcie, warto je docenić.",
             "Szóstka! Warto to razem uczcić.",

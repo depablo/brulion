@@ -39,6 +39,21 @@ class GradeMotivationTest {
     }
 
     @Test
+    fun noLineForPointOrDescriptiveGrades() {
+        val point = entry("Nowa ocena: Fizyka – 4").copy(refKey = "POINT:7")
+        val descriptive = entry("Nowa ocena: Fizyka – 4").copy(refKey = "DESCRIPTIVE:7")
+        assertNull(GradeMotivation.forEntry(point, parent = false))
+        assertNull(GradeMotivation.forEntry(descriptive, parent = false))
+    }
+
+    @Test
+    fun noLineForProposedOrFinalGrades() {
+        assertNull(GradeMotivation.forEntry(entry("Ocena roczna: Matematyka – 1"), parent = false))
+        assertNull(GradeMotivation.forEntry(entry("Przewidywana ocena roczna: Matematyka – 2"), parent = true))
+        assertNull(GradeMotivation.forEntry(entry("Ocena śródroczna: Matematyka – 5"), parent = false))
+    }
+
+    @Test
     fun tenDistinctTextsPerGradeAndAudience() {
         for (texts in listOf(GradeMotivation.Student, GradeMotivation.Parent)) {
             assertEquals((1..6).toSet(), texts.keys)
