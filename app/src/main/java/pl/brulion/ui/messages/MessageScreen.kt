@@ -47,6 +47,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,6 +63,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import pl.brulion.R
 import pl.brulion.data.Downloads
 import pl.brulion.librus.MessageHtml
@@ -93,12 +97,17 @@ fun MessageScreen(viewModel: MessageViewModel, onBack: () -> Unit, onReply: () -
         }
     }
     var toSave by remember { mutableStateOf<File?>(null) }
+    val scope = rememberCoroutineScope()
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { uri ->
         val file = toSave
-        if (uri != null && file != null) {
-            val saved = runCatching {
-                context.contentResolver.openOutputStream(uri)?.use { out -> file.inputStream().use { it.copyTo(out) } }
-            }.isSuccess
+        if (uri != null && file != null) scope.launch {
+            val saved = withContext(Dispatchers.IO) {
+                runCatching {
+                    // A null stream means the destination refused the file: that is a failure, not a silent success.
+                    val out = requireNotNull(context.contentResolver.openOutputStream(uri)) { "no output stream for $uri" }
+                    out.use { stream -> file.inputStream().use { input -> input.copyTo(stream) } }
+                }.isSuccess
+            }
             Toast.makeText(context, if (saved) R.string.message_saved else R.string.message_save_failed, Toast.LENGTH_SHORT).show()
         }
         toSave = null
