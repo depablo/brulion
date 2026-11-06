@@ -115,7 +115,10 @@
     <string name="print_regular">Plan stały (bez zastępstw i zmian)</string>
     <string name="print_regular_suffix">plan stały</string>
     <string name="print_with_changes">Z zastępstwami i zmianami tygodnia</string>
-    <string name="print_action">Drukuj / zapisz PDF</string>
+    <string name="print_action">Drukuj</string>
+    <string name="print_save_pdf">Zapisz PDF</string>
+    <string name="print_saved">Zapisano %s w Pobranych</string>
+    <string name="print_save_failed">Nie udało się zapisać PDF</string>
 
     <string name="grades_empty">Jeszcze nie ma ocen</string>
     <string name="grades_semester">Semestr %1$d</string>

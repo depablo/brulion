@@ -1,9 +1,13 @@
 package pl.brulion.ui.timetable
 
 import android.annotation.SuppressLint
+import android.content.ContentValues
 import android.content.Context
 import android.print.PrintAttributes
+import android.print.PrintDocumentAdapter
 import android.print.PrintManager
+import android.provider.MediaStore
+import android.widget.Toast
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.clickable
@@ -117,42 +121,68 @@ private fun esc(text: String): String = buildString {
 }
 
 /**
- * The WebView is kept until printing starts, so it isn't collected while it loads; it is cleared
- * right after, so it never outlives the print job.
+ * Renders [html] in a WebView and hands its document adapter to [onReady] once the page has loaded.
+ * The WebView is held here until then, so it isn't collected while it loads.
  */
 @SuppressLint("StaticFieldLeak")
-private var pendingPrint: WebView? = null
+private var pendingPlan: WebView? = null
 
-/**
- * Prints [html] through the system print dialog, where the user can choose a printer or save a PDF.
- * Must be called on the main thread.
- */
-internal fun printPlan(context: Context, jobName: String, html: String) {
+private fun renderPlan(context: Context, jobName: String, html: String, onReady: (PrintDocumentAdapter) -> Unit) {
     val webView = WebView(context)
-    pendingPrint = webView
+    pendingPlan = webView
     webView.webViewClient = object : WebViewClient() {
         override fun onPageFinished(view: WebView?, url: String?) {
             val target = view ?: return
-            val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
-            val attributes = PrintAttributes.Builder()
-                .setMediaSize(PrintAttributes.MediaSize.ISO_A4.asLandscape())
-                .build()
-            printManager.print(jobName, target.createPrintDocumentAdapter(jobName), attributes)
-            pendingPrint = null
+            pendingPlan = null
+            onReady(target.createPrintDocumentAdapter(jobName))
         }
     }
     webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
 }
 
+/** Opens the system print dialog; there the user picks a printer, or "Save as PDF" in the same dialog. Main thread only. */
+internal fun printPlan(context: Context, jobName: String, html: String) {
+    renderPlan(context, jobName, html) { adapter ->
+        val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
+        val attributes = PrintAttributes.Builder()
+            .setMediaSize(PrintAttributes.MediaSize.ISO_A4.asLandscape())
+            .setMinMargins(PrintAttributes.Margins(400, 400, 400, 400))
+            .build()
+        printManager.print(jobName, adapter, attributes)
+    }
+}
+
 /**
- * Asks which students and which plan to print. "Regular" leaves out the week's substitutions and
- * moves; "with changes" prints the week as it is in the app.
+ * Writes the plan as a PDF into the Downloads folder. Returns false, and removes the half-written file,
+ * when the file can't be created. Call off the main thread.
+ */
+internal fun savePlanPdf(context: Context, fileName: String, title: String, monday: LocalDate, students: List<PrintedStudent>): Boolean {
+    val resolver = context.contentResolver
+    val pending = ContentValues().apply {
+        put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+        put(MediaStore.Downloads.MIME_TYPE, "application/pdf")
+        put(MediaStore.Downloads.IS_PENDING, 1)
+    }
+    val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, pending) ?: return false
+    return try {
+        val stream = resolver.openOutputStream(uri) ?: error("no output stream for $uri")
+        stream.use { writePlanPdf(title, monday, students, it) }
+        resolver.update(uri, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
+        true
+    } catch (e: Exception) {
+        resolver.delete(uri, null, null)
+        false
+    }
+}
+
+/**
+ * Asks which students and which plan to print or save. "Regular" leaves out the week's substitutions
+ * and moves; "with changes" shows the week as it is in the app.
  */
 @Composable
 fun PrintPlanDialog(monday: LocalDate, currentProfileId: Long, onDismiss: () -> Unit) {
     val container = appContainer()
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val profiles by container.accounts.allProfiles.collectAsStateWithLifecycle(emptyList())
     var chosen by remember { mutableStateOf(setOf(currentProfileId)) }
     var regular by remember { mutableStateOf(false) }
@@ -160,6 +190,21 @@ fun PrintPlanDialog(monday: LocalDate, currentProfileId: Long, onDismiss: () -> 
     val title = stringResource(R.string.print_plan_title) + " · " +
         "${monday.formatShort()} – ${sunday.formatShort()}" +
         if (regular) " · " + stringResource(R.string.print_regular_suffix) else ""
+    val pdfName = "plan-lekcji-$monday${if (regular) "-staly" else ""}.pdf"
+
+    // The work runs in the app scope: this dialog leaves the screen as soon as the user picks an action.
+    fun build(then: suspend (List<PrintedStudent>) -> Unit) {
+        val picked = profiles.filter { it.id in chosen }
+        container.appScope.launch {
+            val students = withContext(Dispatchers.IO) {
+                picked.map { profile ->
+                    val lessons = container.database.timetableDao().observeRange(profile.id, monday, sunday).first()
+                    PrintedStudent(profile.studentName, if (regular) regularPlan(lessons) else lessons)
+                }
+            }
+            then(students)
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -192,24 +237,27 @@ fun PrintPlanDialog(monday: LocalDate, currentProfileId: Long, onDismiss: () -> 
             }
         },
         confirmButton = {
-            TextButton(
-                enabled = chosen.isNotEmpty(),
-                onClick = {
-                    val picked = profiles.filter { it.id in chosen }
-                    scope.launch {
-                        val students = withContext(Dispatchers.IO) {
-                            picked.map { profile ->
-                                val lessons = container.database.timetableDao()
-                                    .observeRange(profile.id, monday, sunday).first()
-                                PrintedStudent(profile.studentName, if (regular) regularPlan(lessons) else lessons)
-                            }
+            Row {
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+                TextButton(
+                    enabled = chosen.isNotEmpty(),
+                    onClick = {
+                        build { students ->
+                            val saved = withContext(Dispatchers.IO) { savePlanPdf(context, pdfName, title, monday, students) }
+                            val message = if (saved) R.string.print_saved else R.string.print_save_failed
+                            Toast.makeText(context, context.getString(message, pdfName), Toast.LENGTH_LONG).show()
                         }
-                        printPlan(context, title, planHtml(title, monday, students))
-                    }
-                    onDismiss()
-                },
-            ) { Text(stringResource(R.string.print_action)) }
+                        onDismiss()
+                    },
+                ) { Text(stringResource(R.string.print_save_pdf)) }
+                TextButton(
+                    enabled = chosen.isNotEmpty(),
+                    onClick = {
+                        build { students -> printPlan(context, title, planHtml(title, monday, students)) }
+                        onDismiss()
+                    },
+                ) { Text(stringResource(R.string.print_action)) }
+            }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }
