@@ -98,6 +98,9 @@
     <string name="today_quiet_text">Nic nowego w ostatnich dniach. Pociągnij w dół, żeby sprawdzić jeszcze raz.</string>
 
     <string name="lesson_classroom">s. %1$s</string>
+    <string name="lesson_number">Lekcja %d</string>
+    <string name="lesson_events_title">Wydarzenia w tej lekcji</string>
+    <string name="close">Zamknij</string>
     <string name="lesson_cancelled">Odwołana</string>
     <string name="lesson_substitution">Zastępstwo</string>
     <string name="lesson_substitution_for">Zastępstwo za: %1$s</string>
