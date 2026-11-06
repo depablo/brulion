@@ -12,6 +12,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -45,32 +47,39 @@ import pl.brulion.data.db.TimetableLessonEntity
 import pl.brulion.data.school.regularPlan
 import pl.brulion.ui.common.appContainer
 import pl.brulion.ui.common.formatShort
+import pl.brulion.librus.schoolToday
 import pl.brulion.ui.common.formatWeekday
 import pl.brulion.widget.onePerChild
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 /** One student's lessons for the printed week. */
 internal class PrintedStudent(val name: String, val lessons: List<TimetableLessonEntity>)
 
 /**
- * The printable plan as HTML: one page per student, days across and lesson numbers down.
- * Changes are marked in the cells; a regular plan has none, because [regularPlan] removed them.
+ * The printable plan as HTML: days across and lesson numbers down. [compact] puts all students on one
+ * page with smaller text; otherwise each student gets a page. Changes are marked in the cells; a
+ * regular plan has none, because [regularPlan] removed them.
  */
-internal fun planHtml(title: String, monday: LocalDate, students: List<PrintedStudent>): String {
+internal fun planHtml(title: String, monday: LocalDate, students: List<PrintedStudent>, compact: Boolean, printedOn: LocalDate): String {
     val sections = students.joinToString("\n") { studentSection(it, monday) }
+    val size = if (compact) "8px" else "11px"
+    val breaks = if (compact) "" else "section + section { page-break-before: always; }"
     return """<!doctype html><html><head><meta charset="utf-8"><style>
-        body { font-family: sans-serif; font-size: 11px; color: #111; margin: 0; }
-        h1 { font-size: 15px; margin: 0 0 8px 0; }
-        h2 { font-size: 13px; margin: 0 0 6px 0; }
+        body { font-family: sans-serif; font-size: $size; color: #111; margin: 0; }
+        h1 { font-size: 1.4em; margin: 0 0 6px 0; }
+        h2 { font-size: 1.2em; margin: 8px 0 4px 0; }
         table { border-collapse: collapse; width: 100%; table-layout: fixed; }
-        th, td { border: 1px solid #888; padding: 3px; vertical-align: top; }
+        th, td { border: 1px solid #888; padding: 2px; vertical-align: top; }
         thead th { background: #e6e6e6; }
-        tbody th { width: 60px; background: #f4f4f4; font-weight: normal; }
-        .l { margin-bottom: 4px; }
+        tbody th { width: 48px; background: #f4f4f4; font-weight: normal; }
+        .l { margin-bottom: 3px; }
         .off { text-decoration: line-through; color: #555; }
         .chg { font-style: italic; }
-        section + section { page-break-before: always; }
-        </style></head><body><h1>${esc(title)}</h1>$sections</body></html>"""
+        footer { margin-top: 6px; color: #555; font-size: 0.9em; }
+        $breaks
+        </style></head><body><h1>${esc(title)}</h1>$sections
+        <footer>Wydrukowano: ${esc(printedOn.format(PrintedOnFormat))}</footer></body></html>"""
 }
 
 private fun studentSection(student: PrintedStudent, monday: LocalDate): String {
@@ -121,6 +130,9 @@ private fun esc(text: String): String = buildString {
     }
 }
 
+
+private val PrintedOnFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+
 /**
  * Renders [html] in a WebView and hands its document adapter to [onReady] once the page has loaded.
  * The WebView is held here until then, so it isn't collected while it loads.
@@ -141,12 +153,14 @@ private fun renderPlan(context: Context, jobName: String, html: String, onReady:
     webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
 }
 
-/** Opens the system print dialog; there the user picks a printer, or "Save as PDF" in the same dialog. Main thread only. */
-internal fun printPlan(context: Context, jobName: String, html: String) {
+/** Opens the system print dialog, where the user picks a printer or "Save as PDF". Main thread only. */
+internal fun printPlan(context: Context, jobName: String, html: String, size: PlanSize) {
     renderPlan(context, jobName, html) { adapter ->
         val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
+        val mediaSize = if (size == PlanSize.LARGE) PrintAttributes.MediaSize.ISO_A4.asLandscape()
+        else PrintAttributes.MediaSize.ISO_A4.asPortrait()
         val attributes = PrintAttributes.Builder()
-            .setMediaSize(PrintAttributes.MediaSize.ISO_A4.asLandscape())
+            .setMediaSize(mediaSize)
             .setMinMargins(PrintAttributes.Margins(400, 400, 400, 400))
             .build()
         printManager.print(jobName, adapter, attributes)
@@ -157,7 +171,15 @@ internal fun printPlan(context: Context, jobName: String, html: String) {
  * Writes the plan as a PDF into the Downloads folder. Returns false, and removes the half-written file,
  * when the file can't be created. Call off the main thread.
  */
-internal fun savePlanPdf(context: Context, fileName: String, title: String, monday: LocalDate, students: List<PrintedStudent>): Boolean {
+internal fun savePlanPdf(
+    context: Context,
+    fileName: String,
+    title: String,
+    monday: LocalDate,
+    students: List<PrintedStudent>,
+    size: PlanSize,
+    printedOn: LocalDate,
+): Boolean {
     val resolver = context.contentResolver
     val pending = ContentValues().apply {
         put(MediaStore.Downloads.DISPLAY_NAME, fileName)
@@ -167,7 +189,7 @@ internal fun savePlanPdf(context: Context, fileName: String, title: String, mond
     val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, pending) ?: return false
     return try {
         val stream = resolver.openOutputStream(uri) ?: error("no output stream for $uri")
-        stream.use { writePlanPdf(title, monday, students, it) }
+        stream.use { writePlanPdf(title, monday, students, size, printedOn, it) }
         resolver.update(uri, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
         true
     } catch (e: Exception) {
@@ -177,8 +199,8 @@ internal fun savePlanPdf(context: Context, fileName: String, title: String, mond
 }
 
 /**
- * Asks which students and which plan to print or save. "Regular" leaves out the week's substitutions
- * and moves; "with changes" shows the week as it is in the app.
+ * Asks which students and which plan to print or save. The regular plan is the default: it leaves out
+ * the week's substitutions and moves, and its title has no date range, only the printing date.
  */
 @Composable
 fun PrintPlanDialog(monday: LocalDate, currentProfileId: Long, onDismiss: () -> Unit) {
@@ -188,12 +210,16 @@ fun PrintPlanDialog(monday: LocalDate, currentProfileId: Long, onDismiss: () -> 
     // A child seen through a parent and a student account is one timetable: listed once.
     val profiles = remember(accountProfiles, currentProfileId) { onePerChild(accountProfiles, currentProfileId) }
     var chosen by remember { mutableStateOf(setOf(currentProfileId)) }
-    var regular by remember { mutableStateOf(false) }
+    var regular by remember { mutableStateOf(true) }
+    var size by remember { mutableStateOf(PlanSize.SMALL) }
     val sunday = monday.plusDays(6)
-    val title = stringResource(R.string.plan_document_title) + " · " +
-        "${monday.formatShort()} – ${sunday.formatShort()}" +
-        if (regular) " · " + stringResource(R.string.print_regular_suffix) else ""
-    val pdfName = "plan-lekcji-$monday${if (regular) "-staly" else ""}.pdf"
+    val printedOn = remember { schoolToday() }
+    val title = stringResource(R.string.plan_document_title) + " · " + if (regular) {
+        stringResource(R.string.print_regular_suffix)
+    } else {
+        "${monday.formatShort()} – ${sunday.formatShort()}"
+    }
+    val fileName = if (regular) "plan-stały-$printedOn.pdf" else "plan-lekcji-$monday.pdf"
 
     // The work runs in the app scope: this dialog leaves the screen as soon as the user picks an action.
     fun build(then: suspend (List<PrintedStudent>) -> Unit) {
@@ -213,7 +239,7 @@ fun PrintPlanDialog(monday: LocalDate, currentProfileId: Long, onDismiss: () -> 
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.print_plan_title)) },
         text = {
-            Column {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
                 Text(stringResource(R.string.print_students), style = MaterialTheme.typography.labelLarge)
                 profiles.forEach { profile ->
                     Row(
@@ -237,6 +263,16 @@ fun PrintPlanDialog(monday: LocalDate, currentProfileId: Long, onDismiss: () -> 
                     RadioButton(selected = !regular, onClick = null)
                     Text(stringResource(R.string.print_with_changes))
                 }
+                Spacer(Modifier.height(12.dp))
+                Text(stringResource(R.string.print_size), style = MaterialTheme.typography.labelLarge)
+                Row(Modifier.fillMaxWidth().clickable { size = PlanSize.SMALL }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = size == PlanSize.SMALL, onClick = null)
+                    Text(stringResource(R.string.print_size_small))
+                }
+                Row(Modifier.fillMaxWidth().clickable { size = PlanSize.LARGE }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = size == PlanSize.LARGE, onClick = null)
+                    Text(stringResource(R.string.print_size_large))
+                }
             }
         },
         confirmButton = {
@@ -245,10 +281,13 @@ fun PrintPlanDialog(monday: LocalDate, currentProfileId: Long, onDismiss: () -> 
                 TextButton(
                     enabled = chosen.isNotEmpty(),
                     onClick = {
+                        val chosenSize = size
                         build { students ->
-                            val saved = withContext(Dispatchers.IO) { savePlanPdf(context, pdfName, title, monday, students) }
+                            val saved = withContext(Dispatchers.IO) {
+                                savePlanPdf(context, fileName, title, monday, students, chosenSize, printedOn)
+                            }
                             val message = if (saved) R.string.print_saved else R.string.print_save_failed
-                            Toast.makeText(context, context.getString(message, pdfName), Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, context.getString(message, fileName), Toast.LENGTH_LONG).show()
                         }
                         onDismiss()
                     },
@@ -256,7 +295,15 @@ fun PrintPlanDialog(monday: LocalDate, currentProfileId: Long, onDismiss: () -> 
                 TextButton(
                     enabled = chosen.isNotEmpty(),
                     onClick = {
-                        build { students -> printPlan(context, title, planHtml(title, monday, students)) }
+                        val chosenSize = size
+                        build { students ->
+                            printPlan(
+                                context,
+                                title,
+                                planHtml(title, monday, students, compact = chosenSize == PlanSize.SMALL, printedOn = printedOn),
+                                chosenSize,
+                            )
+                        }
                         onDismiss()
                     },
                 ) { Text(stringResource(R.string.print_action)) }

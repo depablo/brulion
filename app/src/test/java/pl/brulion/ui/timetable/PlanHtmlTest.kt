@@ -28,9 +28,12 @@ class PlanHtmlTest {
         otherLessonNo = null,
     )
 
+    private fun html(title: String, students: List<PrintedStudent>) =
+        planHtml(title, monday, students, compact = false, printedOn = monday)
+
     @Test
     fun studentNameAndSubjectsAreEscaped() {
-        val html = planHtml("Plan", monday, listOf(PrintedStudent("Ola <script>", listOf(lesson("Matma & fizyka")))))
+        val html = html("Plan", listOf(PrintedStudent("Ola <script>", listOf(lesson("Matma & fizyka")))))
 
         assertTrue(html.contains("Ola &lt;script&gt;"))
         assertTrue(html.contains("Matma &amp; fizyka"))
@@ -39,10 +42,7 @@ class PlanHtmlTest {
 
     @Test
     fun changesAreMarkedInTheCell() {
-        val html = planHtml(
-            "Plan",
-            monday,
-            listOf(PrintedStudent("Ola", listOf(lesson("Chemia", LessonState.CANCELLED), lesson("Fizyka", LessonState.SUBSTITUTION, day = 1)))),
+        val html = html("Plan", listOf(PrintedStudent("Ola", listOf(lesson("Chemia", LessonState.CANCELLED), lesson("Fizyka", LessonState.SUBSTITUTION, day = 1)))),
         )
 
         assertTrue(html.contains("odwołana"))
@@ -51,7 +51,7 @@ class PlanHtmlTest {
 
     @Test
     fun regularPlanHasNoChangeMarks() {
-        val html = planHtml("Plan", monday, listOf(PrintedStudent("Ola", listOf(lesson("Matma")))))
+        val html = html("Plan", listOf(PrintedStudent("Ola", listOf(lesson("Matma")))))
 
         assertFalse(html.contains("odwołana"))
         assertFalse(html.contains("zastępstwo"))
@@ -60,10 +60,7 @@ class PlanHtmlTest {
 
     @Test
     fun eachStudentStartsOnItsOwnPage() {
-        val html = planHtml(
-            "Plan",
-            monday,
-            listOf(PrintedStudent("Ola", listOf(lesson("Matma"))), PrintedStudent("Jan", listOf(lesson("Polski")))),
+        val html = html("Plan", listOf(PrintedStudent("Ola", listOf(lesson("Matma"))), PrintedStudent("Jan", listOf(lesson("Polski")))),
         )
 
         assertEquals(2, Regex("<section>").findAll(html).count())

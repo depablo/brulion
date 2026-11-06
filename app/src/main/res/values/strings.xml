@@ -116,6 +116,9 @@
     <string name="plan_document_title">Plan lekcji</string>
     <string name="print_students">Uczniowie</string>
     <string name="print_kind">Rodzaj planu</string>
+    <string name="print_size">Rozmiar</string>
+    <string name="print_size_small">Mały: wszyscy na jednej kartce A4, pionowo</string>
+    <string name="print_size_large">Duży: jedno dziecko na stronie, poziomo</string>
     <string name="print_regular">Plan stały (bez zastępstw i zmian)</string>
     <string name="print_regular_suffix">plan stały</string>
     <string name="print_with_changes">Z zastępstwami i zmianami tygodnia</string>
