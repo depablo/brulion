@@ -110,6 +110,7 @@
     <string name="week_previous">Poprzedni tydzień</string>
     <string name="week_next">Następny tydzień</string>
     <string name="print_plan_title">Drukuj plan lekcji</string>
+    <string name="plan_document_title">Plan lekcji</string>
     <string name="print_students">Uczniowie</string>
     <string name="print_kind">Rodzaj planu</string>
     <string name="print_regular">Plan stały (bez zastępstw i zmian)</string>

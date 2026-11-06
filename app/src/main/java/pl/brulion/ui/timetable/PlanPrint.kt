@@ -46,6 +46,7 @@ import pl.brulion.data.school.regularPlan
 import pl.brulion.ui.common.appContainer
 import pl.brulion.ui.common.formatShort
 import pl.brulion.ui.common.formatWeekday
+import pl.brulion.widget.onePerChild
 import java.time.LocalDate
 
 /** One student's lessons for the printed week. */
@@ -183,11 +184,13 @@ internal fun savePlanPdf(context: Context, fileName: String, title: String, mond
 fun PrintPlanDialog(monday: LocalDate, currentProfileId: Long, onDismiss: () -> Unit) {
     val container = appContainer()
     val context = LocalContext.current
-    val profiles by container.accounts.allProfiles.collectAsStateWithLifecycle(emptyList())
+    val accountProfiles by container.accounts.allProfiles.collectAsStateWithLifecycle(emptyList())
+    // A child seen through a parent and a student account is one timetable: listed once.
+    val profiles = remember(accountProfiles, currentProfileId) { onePerChild(accountProfiles, currentProfileId) }
     var chosen by remember { mutableStateOf(setOf(currentProfileId)) }
     var regular by remember { mutableStateOf(false) }
     val sunday = monday.plusDays(6)
-    val title = stringResource(R.string.print_plan_title) + " · " +
+    val title = stringResource(R.string.plan_document_title) + " · " +
         "${monday.formatShort()} – ${sunday.formatShort()}" +
         if (regular) " · " + stringResource(R.string.print_regular_suffix) else ""
     val pdfName = "plan-lekcji-$monday${if (regular) "-staly" else ""}.pdf"
