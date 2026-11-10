@@ -206,6 +206,7 @@ private val FeedKind.icon: ImageVector
         FeedKind.MESSAGE -> Icons.Outlined.Mail
         FeedKind.LESSON_CHANGE -> Icons.Outlined.EventBusy
         FeedKind.ABSENCE_REMINDER -> Icons.Outlined.AssignmentLate
+        FeedKind.TEACHER_ABSENCE -> Icons.Outlined.EventBusy
     }
 
 /** Opens the calendar app with an all-day entry prefilled; nothing is saved without the user. */

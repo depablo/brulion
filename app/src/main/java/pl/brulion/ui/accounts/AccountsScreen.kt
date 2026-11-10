@@ -265,6 +265,8 @@ private val SyncSection.label: Int
         SyncSection.TIMETABLE -> R.string.section_timetable
         SyncSection.MESSAGES -> R.string.section_messages
         SyncSection.HOMEWORK -> R.string.section_homework
+        SyncSection.TEACHER_ABSENCES -> R.string.section_teacher_absences
+        SyncSection.PT_MEETINGS -> R.string.section_pt_meetings
     }
 
 @Composable

@@ -44,6 +44,9 @@ class FeedRecorder(
             db.eventDao().addedSince(id, since).mapTo(this) { it.toFeed(profile) }
             announcements.visible(id).filter { it.addedAt >= since }.mapTo(this) { it.toFeed(profile) }
             db.messageDao().sentSince(id, since).mapTo(this) { it.toFeed(profile) }
+            // Both are stamped when first seen, so only the ones new since the last sync count.
+            db.teacherAbsenceDao().seenSince(id, since).mapTo(this) { it.toFeed(profile) }
+            db.ptMeetingDao().seenSince(id, since).mapTo(this) { it.toFeed(profile) }
         }
         // Lesson changes describe the current plan, not past events: one the school took back
         // or changed again leaves the feed.

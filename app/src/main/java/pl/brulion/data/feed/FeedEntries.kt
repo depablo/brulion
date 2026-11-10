@@ -14,6 +14,8 @@ import pl.brulion.data.db.MessageEntity
 import pl.brulion.data.db.NoteEntity
 import pl.brulion.data.db.NotePolarity
 import pl.brulion.data.db.ProfileEntity
+import pl.brulion.data.db.PtMeetingEntity
+import pl.brulion.data.db.TeacherAbsenceEntity
 import pl.brulion.data.db.TimetableLessonEntity
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -85,6 +87,34 @@ internal fun EventEntity.toFeed(profile: ProfileEntity) = FeedEntryEntity(
     occurredAt = addedAt,
     title = listOfNotNull(typeName, subjectName).joinToString(" – ") + ", ${date.format(ShortDate)}",
     detail = topic.takeIf { it.isNotBlank() },
+    date = date,
+)
+
+internal fun TeacherAbsenceEntity.toFeed(profile: ProfileEntity) = FeedEntryEntity(
+    profileId = profile.id,
+    childKey = childKey(profile),
+    kind = FeedKind.TEACHER_ABSENCE,
+    refKey = id.toString(),
+    occurredAt = firstSeenAt,
+    title = "Nieobecność nauczyciela" + (teacherName?.let { ": $it" } ?: ""),
+    detail = teacherAbsenceDetail(dateFrom, dateTo, timeFrom, timeTo),
+    date = dateFrom,
+)
+
+private fun teacherAbsenceDetail(from: LocalDate, to: LocalDate, timeFrom: String?, timeTo: String?): String {
+    val days = if (from == to) from.format(ShortDate) else "${from.format(ShortDate)} – ${to.format(ShortDate)}"
+    return if (timeFrom != null && timeTo != null) "$days, $timeFrom–$timeTo" else days
+}
+
+/** Parent-teacher meetings use the calendar kind, so they can go to the phone calendar too. */
+internal fun PtMeetingEntity.toFeed(profile: ProfileEntity) = FeedEntryEntity(
+    profileId = profile.id,
+    childKey = childKey(profile),
+    kind = FeedKind.EVENT,
+    refKey = "pt-$id",
+    occurredAt = firstSeenAt,
+    title = "Spotkanie z rodzicami, ${date.format(ShortDate)}",
+    detail = listOfNotNull(startTime, teacherName, topic.takeIf { it.isNotBlank() }).joinToString(" · ").takeIf { it.isNotEmpty() },
     date = date,
 )
 

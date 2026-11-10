@@ -201,7 +201,7 @@ fun MainScreen(
                     when (entry.kind) {
                         FeedKind.MESSAGE -> entry.targetId?.let { onOpenMessage(entry.profileId, it) }
                         FeedKind.GRADE -> tab = MainTab.GRADES
-                        FeedKind.LESSON_CHANGE -> tab = MainTab.TIMETABLE
+                        FeedKind.LESSON_CHANGE, FeedKind.TEACHER_ABSENCE -> tab = MainTab.TIMETABLE
                         FeedKind.EVENT -> onOpen(MoreDestination.EVENTS)
                         FeedKind.ANNOUNCEMENT -> onOpen(MoreDestination.ANNOUNCEMENTS)
                         FeedKind.NOTE -> onOpen(MoreDestination.NOTES)

@@ -288,8 +288,43 @@ data class MessageAttachmentEntity(
     val fileName: String,
 )
 
+/** A teacher's absence ("nieobecność nauczyciela") for some days or part of a day. */
+@Entity(
+    tableName = "teacher_absences",
+    primaryKeys = ["profileId", "id"],
+    foreignKeys = [ForeignKey(ProfileEntity::class, ["id"], ["profileId"], onDelete = ForeignKey.CASCADE)],
+)
+data class TeacherAbsenceEntity(
+    val profileId: Long,
+    val id: Long,
+    val dateFrom: LocalDate,
+    val dateTo: LocalDate,
+    /** "HH:mm", both null for a whole day. */
+    val timeFrom: String?,
+    val timeTo: String?,
+    val teacherName: String?,
+    val firstSeenAt: Long,
+)
+
+/** A parent-teacher meeting ("spotkanie z rodzicami"). */
+@Entity(
+    tableName = "pt_meetings",
+    primaryKeys = ["profileId", "id"],
+    foreignKeys = [ForeignKey(ProfileEntity::class, ["id"], ["profileId"], onDelete = ForeignKey.CASCADE)],
+)
+data class PtMeetingEntity(
+    val profileId: Long,
+    val id: Long,
+    val date: LocalDate,
+    /** "HH:mm", null when Librus has no time for the meeting. */
+    val startTime: String?,
+    val teacherName: String?,
+    val topic: String,
+    val firstSeenAt: Long,
+)
+
 /** Stored by name; [ABSENCE_REMINDER] is written by Brulion itself, not taken from Librus. */
-enum class FeedKind { GRADE, NOTE, ATTENDANCE, EVENT, ANNOUNCEMENT, MESSAGE, LESSON_CHANGE, ABSENCE_REMINDER }
+enum class FeedKind { GRADE, NOTE, ATTENDANCE, EVENT, ANNOUNCEMENT, MESSAGE, LESSON_CHANGE, ABSENCE_REMINDER, TEACHER_ABSENCE }
 
 /**
  * One line of the activity feed. Written during sync and never replaced by it, so the feed

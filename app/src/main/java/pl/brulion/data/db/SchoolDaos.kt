@@ -119,6 +119,48 @@ interface AttendanceDao {
 }
 
 @Dao
+interface TeacherAbsenceDao {
+    @Query("SELECT CAST(id AS TEXT) AS `key`, firstSeenAt FROM teacher_absences WHERE profileId = :profileId")
+    suspend fun seen(profileId: Long): List<SeenRow>
+
+    @Query("SELECT * FROM teacher_absences WHERE profileId = :profileId AND firstSeenAt >= :since")
+    suspend fun seenSince(profileId: Long, since: Long): List<TeacherAbsenceEntity>
+
+    @Query("DELETE FROM teacher_absences WHERE profileId = :profileId")
+    suspend fun deleteAll(profileId: Long)
+
+    @Insert
+    suspend fun insertAll(items: List<TeacherAbsenceEntity>)
+
+    @Transaction
+    suspend fun replaceAll(profileId: Long, items: List<TeacherAbsenceEntity>) {
+        deleteAll(profileId)
+        insertAll(items)
+    }
+}
+
+@Dao
+interface PtMeetingDao {
+    @Query("SELECT CAST(id AS TEXT) AS `key`, firstSeenAt FROM pt_meetings WHERE profileId = :profileId")
+    suspend fun seen(profileId: Long): List<SeenRow>
+
+    @Query("SELECT * FROM pt_meetings WHERE profileId = :profileId AND firstSeenAt >= :since")
+    suspend fun seenSince(profileId: Long, since: Long): List<PtMeetingEntity>
+
+    @Query("DELETE FROM pt_meetings WHERE profileId = :profileId")
+    suspend fun deleteAll(profileId: Long)
+
+    @Insert
+    suspend fun insertAll(items: List<PtMeetingEntity>)
+
+    @Transaction
+    suspend fun replaceAll(profileId: Long, items: List<PtMeetingEntity>) {
+        deleteAll(profileId)
+        insertAll(items)
+    }
+}
+
+@Dao
 interface EventDao {
     @Query("SELECT * FROM events WHERE profileId = :profileId AND addedAt >= :since")
     suspend fun addedSince(profileId: Long, since: Long): List<EventEntity>

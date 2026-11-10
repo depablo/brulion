@@ -261,6 +261,9 @@
     <string name="settings_motivation">Teksty motywacyjne przy ocenach</string>
     <string name="settings_motivation_description">Krótka zachęta pod nową oceną w powiadomieniu. Wyłączone domyślnie.</string>
     <string name="settings_instant_disable">Wyłącz</string>
+    <string name="section_teacher_absences">Nieobecności nauczycieli</string>
+    <string name="section_pt_meetings">Spotkania z rodzicami</string>
+    <string name="instant_kind_teacher_absence">Nieobecności nauczycieli</string>
     <string name="instant_kind_grade">Oceny</string>
     <string name="instant_kind_note">Uwagi</string>
     <string name="instant_kind_lesson_change">Zmiany w planie</string>

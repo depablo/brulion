@@ -29,7 +29,7 @@ import pl.brulion.librus.int
 import pl.brulion.librus.objects
 import pl.brulion.librus.string
 
-enum class SyncSection { GRADES, ANNOUNCEMENTS, ATTENDANCE, EVENTS, NOTES, LUCKY_NUMBER, TIMETABLE, MESSAGES, HOMEWORK }
+enum class SyncSection { GRADES, ANNOUNCEMENTS, ATTENDANCE, EVENTS, NOTES, LUCKY_NUMBER, TIMETABLE, MESSAGES, HOMEWORK, TEACHER_ABSENCES, PT_MEETINGS }
 
 sealed interface SectionResult {
     /** [note] is something odd but not fatal, worth a line in the diagnostics. */
@@ -124,6 +124,22 @@ class SyncRepository(
         SyncSection.HOMEWORK -> {
             val items = HomeworkParser(session, profileId).parse()
             val dao = db.homeworkDao()
+            val stamper = Stamper(dao.seen(profileId), newStamp)
+            dao.replaceAll(profileId, items.map { it.copy(firstSeenAt = stamper.stamp(it.id.toString())) })
+            SectionResult.Ok(items.size, stamper.newCount)
+        }
+
+        SyncSection.TEACHER_ABSENCES -> {
+            val items = TeacherAbsenceParser(session, profileId).parse()
+            val dao = db.teacherAbsenceDao()
+            val stamper = Stamper(dao.seen(profileId), newStamp)
+            dao.replaceAll(profileId, items.map { it.copy(firstSeenAt = stamper.stamp(it.id.toString())) })
+            SectionResult.Ok(items.size, stamper.newCount)
+        }
+
+        SyncSection.PT_MEETINGS -> {
+            val items = PtMeetingParser(session, profileId).parse()
+            val dao = db.ptMeetingDao()
             val stamper = Stamper(dao.seen(profileId), newStamp)
             dao.replaceAll(profileId, items.map { it.copy(firstSeenAt = stamper.stamp(it.id.toString())) })
             SectionResult.Ok(items.size, stamper.newCount)

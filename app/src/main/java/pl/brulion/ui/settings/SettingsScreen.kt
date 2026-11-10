@@ -387,4 +387,5 @@ private fun instantKindLabels(): Map<FeedKind, String> = linkedMapOf(
     FeedKind.ATTENDANCE to stringResource(R.string.instant_kind_attendance),
     FeedKind.EVENT to stringResource(R.string.instant_kind_event),
     FeedKind.ANNOUNCEMENT to stringResource(R.string.instant_kind_announcement),
+    FeedKind.TEACHER_ABSENCE to stringResource(R.string.instant_kind_teacher_absence),
 )
