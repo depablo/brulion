@@ -14,11 +14,14 @@ import pl.brulion.librus.refId
 import pl.brulion.librus.requiredArray
 import pl.brulion.librus.string
 
-/** Teacher absences from TeacherFreeDays; an item without an id or dates can't be shown and is skipped. */
+/**
+ * Teacher absences from Calendars/TeacherFreeDays on the 3.0 API. The 2.0 TeacherFreeDays endpoint
+ * answers 403 for the test account (ACCESS_DENIED). An item without an id or dates is skipped.
+ */
 internal class TeacherAbsenceParser(private val session: SyncSession, private val profileId: Long) {
     suspend fun parse(): List<TeacherAbsenceEntity> {
         val teachers = session.teachers()
-        return session.get("TeacherFreeDays").requiredArray("TeacherFreeDays").objects().mapNotNull { item ->
+        return session.getV3("Calendars/TeacherFreeDays").requiredArray("TeacherFreeDays").objects().mapNotNull { item ->
             TeacherAbsenceEntity(
                 profileId = profileId,
                 id = item.long("Id") ?: return@mapNotNull null,
