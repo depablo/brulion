@@ -16,6 +16,7 @@ import pl.brulion.data.db.LessonState
 import pl.brulion.data.db.TimetableLessonEntity
 import pl.brulion.ui.common.formatShort
 import pl.brulion.ui.common.formatWeekday
+import pl.brulion.ui.common.formatWeekdayFull
 import java.io.OutputStream
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -79,10 +80,11 @@ internal fun writePlanPdf(
     students: List<PrintedStudent>,
     size: PlanSize,
     printedOn: LocalDate,
+    regular: Boolean,
     out: OutputStream,
 ) {
     val document = PdfDocument()
-    val writer = PlanPdfWriter(document, title, monday, size, printedOn)
+    val writer = PlanPdfWriter(document, title, monday, size, printedOn, regular)
     writer.write(students)
     writer.finish()
     document.writeTo(out)
@@ -95,6 +97,8 @@ private class PlanPdfWriter(
     private val monday: LocalDate,
     private val size: PlanSize,
     private val printedOn: LocalDate,
+    /** The regular plan shows only the weekday in the header; a plan with changes also shows the date. */
+    private val regular: Boolean,
 ) {
     private val pageWidth = if (size == PlanSize.LARGE) LARGE_WIDTH else SMALL_WIDTH
     private val pageHeight = if (size == PlanSize.LARGE) LARGE_HEIGHT else SMALL_HEIGHT
@@ -188,7 +192,8 @@ private class PlanPdfWriter(
             it.drawRect(0f, y, width, y + HEADER_HEIGHT, linePaint)
             days.forEachIndexed { index, day ->
                 val x = TIME_WIDTH + index * dayWidth
-                it.drawText("${day.formatWeekday()} ${day.formatShort()}", x + PAD, y + 15f, dayPaint)
+                val label = if (regular) day.formatWeekdayFull() else "${day.formatWeekday()} ${day.formatShort()}"
+                it.drawText(label, x + PAD, y + 15f, dayPaint)
                 it.drawLine(x, y, x, y + HEADER_HEIGHT, linePaint)
             }
         }

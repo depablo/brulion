@@ -29,7 +29,7 @@ class PlanHtmlTest {
     )
 
     private fun html(title: String, students: List<PrintedStudent>) =
-        planHtml(title, monday, students, compact = false, printedOn = monday)
+        planHtml(title, monday, students, compact = false, regular = false, printedOn = monday)
 
     @Test
     fun studentNameAndSubjectsAreEscaped() {

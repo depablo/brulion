@@ -80,7 +80,7 @@ class InstantNotifier(
         )
         val lines = entries.map { listOfNotNull(it.title, it.detail?.takeIf { d -> d.isNotBlank() }).joinToString(" · ") }
         val title = if (entries.size == 1) name else context.getString(R.string.instant_title, name, entries.size)
-        val motivations = entries.map { GradeMotivation.forEntry(it, parent) }
+        val motivations = entries.map { if (settings.motivationEnabled.value) GradeMotivation.forEntry(it, parent) else null }
         // A grade gets an encouraging line under it; InboxStyle has one line per entry, so that needs BigTextStyle.
         val style = if (motivations.all { it == null }) {
             NotificationCompat.InboxStyle().also { style -> lines.take(MAX_LINES).forEach(style::addLine) }

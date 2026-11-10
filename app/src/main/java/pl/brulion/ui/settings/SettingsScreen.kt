@@ -58,6 +58,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.work.ExistingWorkPolicy
 import kotlinx.coroutines.launch
 import pl.brulion.R
+import pl.brulion.data.DEFAULT_INSTANT_KINDS
 import pl.brulion.data.Diagnostics
 import pl.brulion.data.calendar.CalendarExport
 import pl.brulion.data.db.FeedKind
@@ -156,6 +157,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 },
             )
             InstantNotificationsSetting(enabled = canNotify)
+            MotivationSetting()
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilledTonalButton(
                     onClick = {
@@ -362,7 +364,19 @@ private fun InstantNotificationsSetting(enabled: Boolean) {
     }
 }
 
-private val DEFAULT_INSTANT_KINDS = setOf(FeedKind.GRADE, FeedKind.NOTE, FeedKind.LESSON_CHANGE, FeedKind.MESSAGE)
+/** Encouraging lines under new grades in their notifications; see [pl.brulion.data.feed.GradeMotivation]. */
+@Composable
+private fun MotivationSetting() {
+    val settings = appContainer().settings
+    val enabled by settings.motivationEnabled.collectAsStateWithLifecycle()
+
+    ListItem(
+        headlineContent = { Text(stringResource(R.string.settings_motivation)) },
+        supportingContent = { Text(stringResource(R.string.settings_motivation_description)) },
+        leadingContent = { Icon(Icons.Outlined.Favorite, null) },
+        trailingContent = { Switch(checked = enabled, onCheckedChange = settings::setMotivationEnabled) },
+    )
+}
 
 @Composable
 private fun instantKindLabels(): Map<FeedKind, String> = linkedMapOf(

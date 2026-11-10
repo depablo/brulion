@@ -14,6 +14,7 @@ private val DayLong = DateTimeFormatter.ofPattern("EEEE, d MMMM", Polish)
 private val DayShort = DateTimeFormatter.ofPattern("d MMM", Polish)
 private val DayShortWithYear = DateTimeFormatter.ofPattern("d MMM yyyy", Polish)
 private val WeekdayShort = DateTimeFormatter.ofPattern("EEE", Polish)
+private val WeekdayFull = DateTimeFormatter.ofPattern("EEEE", Polish)
 private val Time = DateTimeFormatter.ofPattern("HH:mm", Polish)
 
 fun epochToLocal(seconds: Long): LocalDateTime =
@@ -28,6 +29,9 @@ fun LocalDate.formatShort(): String =
 
 /** "śr." */
 fun LocalDate.formatWeekday(): String = format(WeekdayShort)
+
+/** "Środa" */
+fun LocalDate.formatWeekdayFull(): String = format(WeekdayFull).replaceFirstChar { it.uppercase() }
 
 /** "Dziś", "Jutro", "Wczoraj" or a short date. */
 fun LocalDate.formatRelative(today: LocalDate = LocalDate.now()): String = when (this) {

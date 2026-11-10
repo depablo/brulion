@@ -256,8 +256,10 @@
     <string name="settings_summary_quiet">Także w spokojne dni</string>
     <string name="settings_summary_quiet_description">Wysyłaj podsumowanie, nawet gdy nic nowego się nie wydarzyło. Problemy z pobraniem danych są zgłaszane zawsze.</string>
     <string name="settings_instant">Powiadomienia na bieżąco</string>
-    <string name="settings_instant_off">Wyłączone; nowości przychodzą tylko w wieczornym podsumowaniu.</string>
-    <string name="settings_instant_hint">Powiadomienie przyjdzie zaraz po synchronizacji, która przyniosła nowość (w tle co kilka godzin). Wieczorne podsumowanie zostaje.</string>
+    <string name="settings_instant_off">Wyłączone; nowości widać w zakładce Nowości.</string>
+    <string name="settings_instant_hint">Powiadomienie przyjdzie zaraz po synchronizacji, która przyniosła nowość (w tle co kilka godzin).</string>
+    <string name="settings_motivation">Teksty motywacyjne przy ocenach</string>
+    <string name="settings_motivation_description">Krótka zachęta pod nową oceną w powiadomieniu. Wyłączone domyślnie.</string>
     <string name="settings_instant_disable">Wyłącz</string>
     <string name="instant_kind_grade">Oceny</string>
     <string name="instant_kind_note">Uwagi</string>

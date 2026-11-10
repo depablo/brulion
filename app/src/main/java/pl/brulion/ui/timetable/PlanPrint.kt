@@ -49,6 +49,7 @@ import pl.brulion.ui.common.appContainer
 import pl.brulion.ui.common.formatShort
 import pl.brulion.librus.schoolToday
 import pl.brulion.ui.common.formatWeekday
+import pl.brulion.ui.common.formatWeekdayFull
 import pl.brulion.widget.onePerChild
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -61,8 +62,15 @@ internal class PrintedStudent(val name: String, val lessons: List<TimetableLesso
  * page with smaller text; otherwise each student gets a page. Changes are marked in the cells; a
  * regular plan has none, because [regularPlan] removed them.
  */
-internal fun planHtml(title: String, monday: LocalDate, students: List<PrintedStudent>, compact: Boolean, printedOn: LocalDate): String {
-    val sections = students.joinToString("\n") { studentSection(it, monday) }
+internal fun planHtml(
+    title: String,
+    monday: LocalDate,
+    students: List<PrintedStudent>,
+    compact: Boolean,
+    regular: Boolean,
+    printedOn: LocalDate,
+): String {
+    val sections = students.joinToString("\n") { studentSection(it, monday, regular) }
     val size = if (compact) "8px" else "11px"
     val breaks = if (compact) "" else "section + section { page-break-before: always; }"
     return """<!doctype html><html><head><meta charset="utf-8"><style>
@@ -82,10 +90,13 @@ internal fun planHtml(title: String, monday: LocalDate, students: List<PrintedSt
         <footer>Wydrukowano: ${esc(printedOn.format(PrintedOnFormat))}</footer></body></html>"""
 }
 
-private fun studentSection(student: PrintedStudent, monday: LocalDate): String {
+private fun studentSection(student: PrintedStudent, monday: LocalDate, regular: Boolean): String {
     val grid = weekGrid(student.lessons)
     val days = weekDays(monday, student.lessons)
-    val head = days.joinToString("") { "<th>${esc(it.formatWeekday())} ${it.dayOfMonth}</th>" }
+    val head = days.joinToString("") {
+        val label = if (regular) it.formatWeekdayFull() else "${it.formatWeekday()} ${it.dayOfMonth}"
+        "<th>${esc(label)}</th>"
+    }
     val rows = grid.lessonNumbers.joinToString("") { lessonNo ->
         val time = esc(grid.startTime(lessonNo) ?: lessonNo.toString())
         val cells = days.joinToString("") { day ->
@@ -179,6 +190,7 @@ internal fun savePlanPdf(
     students: List<PrintedStudent>,
     size: PlanSize,
     printedOn: LocalDate,
+    regular: Boolean,
 ): Boolean {
     val resolver = context.contentResolver
     val pending = ContentValues().apply {
@@ -189,7 +201,7 @@ internal fun savePlanPdf(
     val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, pending) ?: return false
     return try {
         val stream = resolver.openOutputStream(uri) ?: error("no output stream for $uri")
-        stream.use { writePlanPdf(title, monday, students, size, printedOn, it) }
+        stream.use { writePlanPdf(title, monday, students, size, printedOn, regular, it) }
         resolver.update(uri, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
         true
     } catch (e: Exception) {
@@ -284,7 +296,7 @@ fun PrintPlanDialog(monday: LocalDate, currentProfileId: Long, onDismiss: () -> 
                         val chosenSize = size
                         build { students ->
                             val saved = withContext(Dispatchers.IO) {
-                                savePlanPdf(context, fileName, title, monday, students, chosenSize, printedOn)
+                                savePlanPdf(context, fileName, title, monday, students, chosenSize, printedOn, regular)
                             }
                             val message = if (saved) R.string.print_saved else R.string.print_save_failed
                             Toast.makeText(context, context.getString(message, fileName), Toast.LENGTH_LONG).show()
@@ -300,7 +312,14 @@ fun PrintPlanDialog(monday: LocalDate, currentProfileId: Long, onDismiss: () -> 
                             printPlan(
                                 context,
                                 title,
-                                planHtml(title, monday, students, compact = chosenSize == PlanSize.SMALL, printedOn = printedOn),
+                                planHtml(
+                                    title,
+                                    monday,
+                                    students,
+                                    compact = chosenSize == PlanSize.SMALL,
+                                    regular = regular,
+                                    printedOn = printedOn,
+                                ),
                                 chosenSize,
                             )
                         }

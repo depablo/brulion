@@ -5,12 +5,41 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import pl.brulion.data.db.FeedKind
 
+/** Feed kinds notified as they arrive until the user picks others in Settings. */
+internal val DEFAULT_INSTANT_KINDS = setOf(
+    FeedKind.GRADE,
+    FeedKind.ATTENDANCE,
+    FeedKind.EVENT,
+    FeedKind.ANNOUNCEMENT,
+    FeedKind.MESSAGE,
+)
+
 /** Small app preferences; tokens and school data live in the database. */
 class Settings(context: Context) {
     private val prefs = context.getSharedPreferences("brulion", Context.MODE_PRIVATE)
 
-    private val _summaryEnabled = MutableStateFlow(prefs.getBoolean(KEY_SUMMARY_ENABLED, true))
+    private val _summaryEnabled = MutableStateFlow(readSummaryEnabled())
     val summaryEnabled: StateFlow<Boolean> = _summaryEnabled
+
+    /**
+     * The evening summary is off by default. Installs that had it on are switched off once, the first
+     * time this runs, so the summary doesn't keep coming after the default changed.
+     */
+    private fun readSummaryEnabled(): Boolean {
+        if (!prefs.getBoolean(KEY_SUMMARY_OFF_MIGRATED, false)) {
+            prefs.edit().putBoolean(KEY_SUMMARY_ENABLED, false).putBoolean(KEY_SUMMARY_OFF_MIGRATED, true).apply()
+        }
+        return prefs.getBoolean(KEY_SUMMARY_ENABLED, false)
+    }
+
+    /** A short encouraging line under new grades in their notifications; off unless the user turns it on. */
+    private val _motivationEnabled = MutableStateFlow(prefs.getBoolean(KEY_MOTIVATION, false))
+    val motivationEnabled: StateFlow<Boolean> = _motivationEnabled
+
+    fun setMotivationEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_MOTIVATION, enabled).apply()
+        _motivationEnabled.value = enabled
+    }
 
     /** Minutes after midnight. */
     private val _summaryTime = MutableStateFlow(prefs.getInt(KEY_SUMMARY_TIME, 19 * 60))
@@ -49,7 +78,8 @@ class Settings(context: Context) {
 
     /** Kinds of feed entries notified as they arrive; empty when the instant notifications are off. */
     private val _instantKinds = MutableStateFlow(
-        prefs.getStringSet(KEY_INSTANT_KINDS, emptySet()).orEmpty().mapNotNull { name -> FeedKind.entries.find { it.name == name } }.toSet()
+        prefs.getStringSet(KEY_INSTANT_KINDS, DEFAULT_INSTANT_KINDS.map { it.name }.toSet()).orEmpty()
+            .mapNotNull { name -> FeedKind.entries.find { it.name == name } }.toSet()
     )
     val instantKinds: StateFlow<Set<FeedKind>> = _instantKinds
 
@@ -108,6 +138,8 @@ class Settings(context: Context) {
         const val KEY_FEED_REVISION = "feed_revision"
         const val KEY_SUMMARY_WHEN_QUIET = "summary_when_quiet"
         const val KEY_INSTANT_SEEN = "instant_seen_feed_id"
+        const val KEY_SUMMARY_OFF_MIGRATED = "summary_off_migrated"
+        const val KEY_MOTIVATION = "grade_motivation"
 
         /** "matura, LO;  olimpiada" -> [matura, LO, olimpiada] */
         fun parseWords(text: String): List<String> =
