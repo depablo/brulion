@@ -32,6 +32,15 @@ class Settings(context: Context) {
         return prefs.getBoolean(KEY_SUMMARY_ENABLED, false)
     }
 
+    /** Reminders before tests, quizzes and homework, and about things to bring; on unless the user turns them off. */
+    private val _remindersEnabled = MutableStateFlow(prefs.getBoolean(KEY_REMINDERS, true))
+    val remindersEnabled: StateFlow<Boolean> = _remindersEnabled
+
+    fun setRemindersEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_REMINDERS, enabled).apply()
+        _remindersEnabled.value = enabled
+    }
+
     /** A short encouraging line under new grades in their notifications; off unless the user turns it on. */
     private val _motivationEnabled = MutableStateFlow(prefs.getBoolean(KEY_MOTIVATION, false))
     val motivationEnabled: StateFlow<Boolean> = _motivationEnabled
@@ -140,6 +149,7 @@ class Settings(context: Context) {
         const val KEY_INSTANT_SEEN = "instant_seen_feed_id"
         const val KEY_SUMMARY_OFF_MIGRATED = "summary_off_migrated"
         const val KEY_MOTIVATION = "grade_motivation"
+        const val KEY_REMINDERS = "school_reminders"
 
         /** "matura, LO;  olimpiada" -> [matura, LO, olimpiada] */
         fun parseWords(text: String): List<String> =

@@ -62,6 +62,7 @@ import pl.brulion.data.DEFAULT_INSTANT_KINDS
 import pl.brulion.data.Diagnostics
 import pl.brulion.data.calendar.CalendarExport
 import pl.brulion.data.db.FeedKind
+import pl.brulion.data.feed.SchoolRemindersWorker
 import pl.brulion.data.summary.DailySummaryWorker
 import pl.brulion.ui.common.appContainer
 import pl.brulion.ui.update.UpdateSettings
@@ -157,6 +158,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 },
             )
             InstantNotificationsSetting(enabled = canNotify)
+            RemindersSetting()
             MotivationSetting()
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilledTonalButton(
@@ -362,6 +364,30 @@ private fun InstantNotificationsSetting(enabled: Boolean) {
             },
         )
     }
+}
+
+/** Reminders before upcoming tests and homework; see [pl.brulion.data.feed.SchoolReminders]. */
+@Composable
+private fun RemindersSetting() {
+    val container = appContainer()
+    val settings = container.settings
+    val enabled by settings.remindersEnabled.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    ListItem(
+        headlineContent = { Text(stringResource(R.string.settings_reminders)) },
+        supportingContent = { Text(stringResource(R.string.settings_reminders_description)) },
+        leadingContent = { Icon(Icons.Outlined.NotificationsActive, null) },
+        trailingContent = {
+            Switch(checked = enabled, onCheckedChange = {
+                settings.setRemindersEnabled(it)
+                SchoolRemindersWorker.schedule(context, settings, ExistingWorkPolicy.REPLACE)
+                // Turning them on mid-day sends the ones already due, as after a sync.
+                if (it) scope.launch { container.reminders.check() }
+            })
+        },
+    )
 }
 
 /** Encouraging lines under new grades in their notifications; see [pl.brulion.data.feed.GradeMotivation]. */

@@ -323,8 +323,11 @@ data class PtMeetingEntity(
     val firstSeenAt: Long,
 )
 
-/** Stored by name; [ABSENCE_REMINDER] is written by Brulion itself, not taken from Librus. */
-enum class FeedKind { GRADE, NOTE, ATTENDANCE, EVENT, ANNOUNCEMENT, MESSAGE, LESSON_CHANGE, ABSENCE_REMINDER, TEACHER_ABSENCE }
+/**
+ * Stored by name. [ABSENCE_REMINDER], [REMINDER] and [HOMEWORK_REMINDER] are written by Brulion
+ * itself, not taken from Librus.
+ */
+enum class FeedKind { GRADE, NOTE, ATTENDANCE, EVENT, ANNOUNCEMENT, MESSAGE, LESSON_CHANGE, ABSENCE_REMINDER, TEACHER_ABSENCE, REMINDER, HOMEWORK_REMINDER }
 
 /**
  * One line of the activity feed. Written during sync and never replaced by it, so the feed

@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Assignment
 import androidx.compose.material.icons.outlined.AssignmentLate
 import androidx.compose.material.icons.outlined.Campaign
 import androidx.compose.material.icons.outlined.DynamicFeed
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.FactCheck
 import androidx.compose.material.icons.outlined.Mail
+import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.StickyNote2
 import androidx.compose.material3.FilterChip
@@ -207,6 +209,8 @@ private val FeedKind.icon: ImageVector
         FeedKind.LESSON_CHANGE -> Icons.Outlined.EventBusy
         FeedKind.ABSENCE_REMINDER -> Icons.Outlined.AssignmentLate
         FeedKind.TEACHER_ABSENCE -> Icons.Outlined.EventBusy
+        FeedKind.REMINDER -> Icons.Outlined.NotificationsActive
+        FeedKind.HOMEWORK_REMINDER -> Icons.Outlined.Assignment
     }
 
 /** Opens the calendar app with an all-day entry prefilled; nothing is saved without the user. */

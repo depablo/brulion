@@ -86,6 +86,9 @@ interface HomeworkDao {
 
     @Query("SELECT * FROM homework WHERE profileId = :profileId ORDER BY dueDate DESC, id DESC")
     fun observeAll(profileId: Long): Flow<List<HomeworkEntity>>
+
+    @Query("SELECT * FROM homework WHERE profileId = :profileId AND dueDate BETWEEN :from AND :to")
+    suspend fun dueBetween(profileId: Long, from: LocalDate, to: LocalDate): List<HomeworkEntity>
 }
 
 @Dao

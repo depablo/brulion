@@ -18,6 +18,7 @@ import pl.brulion.data.MessagesRepository
 import pl.brulion.data.calendar.CalendarExport
 import pl.brulion.data.feed.AbsenceNotifier
 import pl.brulion.data.feed.InstantNotifier
+import pl.brulion.data.feed.SchoolReminders
 import pl.brulion.data.migrateChildKeys
 import pl.brulion.data.Settings
 import pl.brulion.data.db.BrulionDatabase
@@ -59,6 +60,7 @@ class AppContainer(context: Context) {
     private val feedRecorder = FeedRecorder(database, announcements, onAbsenceReminder = absenceNotifier::show)
     val calendarExport = CalendarExport(context, database, accounts, settings, diagnostics)
     val instantNotifier = InstantNotifier(context, database, accounts, announcements, settings)
+    val reminders = SchoolReminders(context, database, accounts, settings)
     val sync = SyncController(
         SyncRepository(database, accounts, librusApi, messageSessions, feedRecorder, diagnostics),
         appScope,
@@ -67,6 +69,7 @@ class AppContainer(context: Context) {
             TimetableWidget.updateAll(context)
             appScope.launch { calendarExport.sync() }
             appScope.launch { instantNotifier.check() }
+            appScope.launch { reminders.check() }
         },
     )
     val messages = MessagesRepository(database, messageSessions, context.filesDir, diagnostics)

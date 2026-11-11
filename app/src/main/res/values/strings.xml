@@ -258,6 +258,11 @@
     <string name="settings_instant">Powiadomienia na bieżąco</string>
     <string name="settings_instant_off">Wyłączone; nowości widać w zakładce Nowości.</string>
     <string name="settings_instant_hint">Powiadomienie przyjdzie zaraz po synchronizacji, która przyniosła nowość (w tle co kilka godzin).</string>
+    <string name="settings_reminders">Przypomnienia o sprawdzianach i zadaniach</string>
+    <string name="settings_reminders_description">O 16:00: na 2 dni i na 1 dzień przed sprawdzianem, kartkówką, pracą klasową, projektem, poprawą lub lekturą; dzień przed rzeczami do przyniesienia i zadaniem domowym. Pojawiają się też w Nowościach.</string>
+    <string name="reminders_channel">Przypomnienia o sprawdzianach</string>
+    <string name="reminders_channel_description">Przypomnienia o terminarzu i zadaniach domowych, o 16:00</string>
+    <string name="reminders_title">%1$s: przypomnienia (%2$d)</string>
     <string name="settings_motivation">Teksty motywacyjne przy ocenach</string>
     <string name="settings_motivation_description">Krótka zachęta pod nową oceną w powiadomieniu. Wyłączone domyślnie.</string>
     <string name="settings_instant_disable">Wyłącz</string>
