@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import pl.brulion.R
 import pl.brulion.data.db.FeedKind
@@ -68,6 +69,7 @@ import pl.brulion.data.sync.SectionResult
 import pl.brulion.data.sync.SyncController
 import pl.brulion.ui.common.CrashReportDialog
 import pl.brulion.ui.common.NameAvatar
+import pl.brulion.data.update.UpdateManager
 import pl.brulion.ui.common.appContainer
 import pl.brulion.ui.common.toUiError
 import pl.brulion.ui.feed.FeedTab
@@ -124,6 +126,9 @@ fun MainScreen(
     }
 
     val db = appContainer().database
+    val updateAvailable by appContainer().updates.state
+        .map { it is UpdateManager.State.Available }
+        .collectAsStateWithLifecycle(false)
     val unread by remember(current?.id) {
         current?.let { db.messageDao().observeUnreadCount(it.id) } ?: flowOf(0)
     }.collectAsStateWithLifecycle(0)
@@ -149,7 +154,9 @@ fun MainScreen(
                         Icon(Icons.Outlined.DoneAll, stringResource(R.string.mark_all_read))
                     }
                     IconButton(onClick = { onOpen(MoreDestination.MORE) }) {
-                        Icon(Icons.Outlined.Menu, stringResource(R.string.tab_more))
+                        BadgedBox(badge = { if (updateAvailable) Badge { Text(stringResource(R.string.update_badge)) } }) {
+                            Icon(Icons.Outlined.Menu, stringResource(R.string.tab_more))
+                        }
                     }
                 },
             )

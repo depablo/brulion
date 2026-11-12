@@ -308,6 +308,7 @@
     <string name="error_send_unconfirmed">Librus nie potwierdził wysłania, ale wiadomość mogła już dojść. Zanim wyślesz ją ponownie, sprawdź wysłane w Librusie.</string>
 
     <string name="settings_updates_section">Aktualizacje</string>
+    <string name="update_badge">New</string>
     <string name="update_version">Wersja %1$s</string>
     <string name="update_not_configured">Ta wersja nie sprawdza aktualizacji.</string>
     <string name="update_tap_to_check">Dotknij, aby sprawdzić aktualizacje</string>
