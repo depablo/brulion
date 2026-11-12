@@ -62,6 +62,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.shape.RoundedCornerShape
 import pl.brulion.R
 import pl.brulion.data.db.FeedKind
 import pl.brulion.data.db.ProfileEntity
@@ -153,10 +155,24 @@ fun MainScreen(
                     }) {
                         Icon(Icons.Outlined.DoneAll, stringResource(R.string.mark_all_read))
                     }
-                    IconButton(onClick = { onOpen(MoreDestination.MORE) }) {
-                        BadgedBox(badge = { if (updateAvailable) Badge { Text(stringResource(R.string.update_badge)) } }) {
-                            Icon(Icons.Outlined.Menu, stringResource(R.string.tab_more))
+                    if (updateAvailable) {
+                        // A pill beside the menu icon: a badge on the icon itself is clipped at the screen edge.
+                        Surface(
+                            onClick = { onOpen(MoreDestination.SETTINGS) },
+                            shape = RoundedCornerShape(50),
+                            color = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(end = 4.dp),
+                        ) {
+                            Text(
+                                stringResource(R.string.update_badge),
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            )
                         }
+                    }
+                    IconButton(onClick = { onOpen(MoreDestination.MORE) }) {
+                        Icon(Icons.Outlined.Menu, stringResource(R.string.tab_more))
                     }
                 },
             )
