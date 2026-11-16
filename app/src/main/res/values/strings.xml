@@ -219,6 +219,7 @@
     <string name="attendance_released">Zwolnienia</string>
     <string name="attendance_other">Inne</string>
     <string name="attendance_justify">Usprawiedliw nieobecności</string>
+    <string name="attendance_justify_day">Usprawiedliw dzień</string>
     <string name="justification_title">e-Usprawiedliwienie</string>
     <string name="justification_mode_lessons">Wybrane lekcje</string>
     <string name="justification_mode_days">Kilka dni</string>

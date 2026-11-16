@@ -136,7 +136,16 @@ class Settings(context: Context) {
         prefs.edit().putLong("$KEY_LAST_SUMMARY$to", at).remove(old).apply()
     }
 
+    /** The message of the last e-Usprawiedliwienie sent for this child, to prefill the next form; null if none. */
+    fun justificationMessage(childKey: String): String? =
+        prefs.getString("$KEY_JUSTIFICATION_MESSAGE$childKey", null)
+
+    fun setJustificationMessage(childKey: String, message: String) {
+        prefs.edit().putString("$KEY_JUSTIFICATION_MESSAGE$childKey", message).apply()
+    }
+
     private companion object {
+        const val KEY_JUSTIFICATION_MESSAGE = "justification_message_"
         const val KEY_SUMMARY_ENABLED = "summary_enabled"
         const val KEY_SUMMARY_TIME = "summary_time"
         const val KEY_LAST_SUMMARY = "last_summary_"

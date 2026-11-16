@@ -57,6 +57,7 @@ import pl.brulion.data.db.AttendanceCategory
 import pl.brulion.data.db.AttendanceEntity
 import pl.brulion.data.db.NoteEntity
 import pl.brulion.data.db.NotePolarity
+import pl.brulion.data.db.ProfileEntity
 import pl.brulion.data.justifications.JUSTIFIABLE_CATEGORIES
 import pl.brulion.data.matchesQuery
 import pl.brulion.ui.common.EmptyState
@@ -249,8 +250,11 @@ internal fun DateHeader(date: LocalDate) {
     )
 }
 
-/** Opens the e-Usprawiedliwienie form; a null [date] means "pick it in the form". */
-typealias OnJustify = (profileId: Long, date: LocalDate?, lessonNo: Int?) -> Unit
+/**
+ * Opens the e-Usprawiedliwienie form for [profile]. A null [date] opens it on today, for whole days;
+ * a date opens that day as a whole; a [lessonNo] opens the lessons mode with that lesson picked.
+ */
+typealias OnJustify = (profile: ProfileEntity, date: LocalDate?, lessonNo: Int?) -> Unit
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -259,8 +263,15 @@ fun AttendanceScreen(onBack: () -> Unit, onJustify: OnJustify) {
         val db = appContainer().database
         val items by remember(profile.id) { db.attendanceDao().observeAll(profile.id) }.collectAsStateWithLifecycle(null)
         val list = items ?: return@ProfileDetailScaffold
+        // e-Usprawiedliwienia are for parents only, and stay open with no absences: they can cover future days.
+        val canJustify = profile.isParent
         if (list.isEmpty()) {
             EmptyState(Icons.Outlined.FactCheck, stringResource(R.string.attendance_empty))
+            if (canJustify) {
+                Button(onClick = { onJustify(profile, null, null) }, Modifier.padding(horizontal = 16.dp)) {
+                    Text(stringResource(R.string.attendance_justify))
+                }
+            }
             return@ProfileDetailScaffold
         }
         val counts = list.groupingBy { it.category }.eachCount()
@@ -289,20 +300,27 @@ fun AttendanceScreen(onBack: () -> Unit, onJustify: OnJustify) {
             if (notPresent.isEmpty()) {
                 item { Text(stringResource(R.string.attendance_all_present), color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
-            if (notPresent.any { it.category in JUSTIFIABLE_CATEGORIES }) {
+            if (canJustify) {
                 item {
-                    Button(onClick = { onJustify(profile.id, null, null) }) {
+                    Button(onClick = { onJustify(profile, null, null) }) {
                         Text(stringResource(R.string.attendance_justify))
                     }
                 }
             }
             notPresent.groupBy { it.date }.forEach { (date, entries) ->
-                item(key = "d$date") { DateHeader(date) }
+                val justifiable = entries.any { it.category in JUSTIFIABLE_CATEGORIES }
+                item(key = "d$date") {
+                    if (canJustify && justifiable) {
+                        JustifyDayHeader(date, onJustify = { onJustify(profile, date, null) })
+                    } else {
+                        DateHeader(date)
+                    }
+                }
                 items(entries, key = { it.id }) { entry ->
                     AttendanceRow(
                         entry = entry,
-                        onClick = if (entry.category in JUSTIFIABLE_CATEGORIES && entry.lessonNo != null) {
-                            { onJustify(profile.id, entry.date, entry.lessonNo) }
+                        onClick = if (canJustify && entry.category in JUSTIFIABLE_CATEGORIES && entry.lessonNo != null) {
+                            { onJustify(profile, entry.date, entry.lessonNo) }
                         } else {
                             null
                         },
@@ -310,6 +328,20 @@ fun AttendanceScreen(onBack: () -> Unit, onJustify: OnJustify) {
                 }
             }
         }
+    }
+}
+
+/** A date header with a button to justify that whole day. */
+@Composable
+private fun JustifyDayHeader(date: LocalDate, onJustify: () -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = date.formatLong(),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = onJustify) { Text(stringResource(R.string.attendance_justify_day)) }
     }
 }
 

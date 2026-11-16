@@ -12,6 +12,7 @@ import androidx.navigation.toRoute
 import kotlinx.serialization.Serializable
 import pl.brulion.ui.accounts.AccountsScreen
 import pl.brulion.ui.accounts.AccountsViewModel
+import pl.brulion.data.childKey
 import pl.brulion.ui.common.LocalMarkedReadAt
 import pl.brulion.ui.common.appContainer
 import pl.brulion.librus.schoolToday
@@ -56,7 +57,16 @@ import java.time.LocalDate
 @Serializable data class ReplyRoute(val profileId: Long, val messageId: Long)
 @Serializable data class SentMessageRoute(val profileId: Long, val messageId: Long)
 @Serializable data class ComposeRoute(val profileId: Long)
-@Serializable data class JustificationRoute(val profileId: Long, val date: String? = null, val lessonNo: Int? = null)
+/**
+ * [childKey] keys the remembered message, shared by a child's parent and student profiles.
+ * A null [lessonNo] opens whole days, starting from [date] (today when null).
+ */
+@Serializable data class JustificationRoute(
+    val profileId: Long,
+    val childKey: String,
+    val date: String? = null,
+    val lessonNo: Int? = null,
+)
 
 @Composable
 fun BrulionNavHost(startDestination: Any, navController: NavHostController = rememberNavController()) {
@@ -152,8 +162,8 @@ fun BrulionNavHost(startDestination: Any, navController: NavHostController = rem
             composable<AttendanceRoute> {
                 AttendanceScreen(
                     onBack = back,
-                    onJustify = { profileId, date, lessonNo ->
-                        navController.navigate(JustificationRoute(profileId, date?.toString(), lessonNo))
+                    onJustify = { profile, date, lessonNo ->
+                        navController.navigate(JustificationRoute(profile.id, childKey(profile), date?.toString(), lessonNo))
                     },
                 )
             }
@@ -168,6 +178,8 @@ fun BrulionNavHost(startDestination: Any, navController: NavHostController = rem
                             profileId = route.profileId,
                             initialDate = route.date?.let(LocalDate::parse) ?: schoolToday(),
                             initialLessonNo = route.lessonNo,
+                            rememberedMessage = it.settings.justificationMessage(route.childKey),
+                            onMessageSent = { message -> it.settings.setJustificationMessage(route.childKey, message) },
                         )
                     },
                     onClose = back,

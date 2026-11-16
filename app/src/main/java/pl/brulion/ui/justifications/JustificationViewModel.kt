@@ -23,7 +23,10 @@ import java.time.LocalDate
 
 /**
  * Sending runs in [appScope], so leaving the screen doesn't cut the request off halfway.
- * [initialLessonNo] preselects one lesson when the form is opened from an attendance row.
+ *
+ * Whole days are the default. [initialLessonNo] opens the lessons mode with that lesson picked
+ * (a tap on one lesson in the attendance list). [rememberedMessage] prefills the message from the
+ * last one sent for this child; [onMessageSent] stores the message after a successful send.
  */
 class JustificationViewModel(
     attendance: Flow<List<AttendanceEntity>>,
@@ -32,11 +35,13 @@ class JustificationViewModel(
     private val profileId: Long,
     initialDate: LocalDate,
     initialLessonNo: Int?,
+    rememberedMessage: String?,
+    private val onMessageSent: (String) -> Unit,
 ) : ViewModel() {
 
     var entries by mutableStateOf<List<AttendanceEntity>>(emptyList())
         private set
-    var mode by mutableStateOf(JustificationMode.LESSONS)
+    var mode by mutableStateOf(if (initialLessonNo != null) JustificationMode.LESSONS else JustificationMode.DAYS)
         private set
     var date by mutableStateOf(initialDate)
         private set
@@ -46,7 +51,7 @@ class JustificationViewModel(
         private set
     var lessons by mutableStateOf(setOfNotNull(initialLessonNo))
         private set
-    var message by mutableStateOf(DEFAULT_MESSAGE)
+    var message by mutableStateOf(rememberedMessage?.takeIf { it.isNotBlank() } ?: DEFAULT_MESSAGE)
     var notifyTeachers by mutableStateOf(false)
     var sending by mutableStateOf(false)
         private set
@@ -103,6 +108,7 @@ class JustificationViewModel(
         appScope.launch {
             try {
                 repository.send(profileId, request)
+                onMessageSent(request.message)
                 sent = true
             } catch (e: CancellationException) {
                 throw e
