@@ -33,8 +33,9 @@ import pl.brulion.data.sync.SyncSection
         HomeworkEntity::class,
         TeacherAbsenceEntity::class,
         PtMeetingEntity::class,
+        ChildOrderEntity::class,
     ],
-    version = 17,
+    version = 18,
     autoMigrations = [
         AutoMigration(from = 1, to = 2, spec = BrulionDatabase.DropSynergiaLogin::class),
         AutoMigration(from = 2, to = 3),
@@ -52,6 +53,7 @@ import pl.brulion.data.sync.SyncSection
         AutoMigration(from = 14, to = 15),
         AutoMigration(from = 15, to = 16),
         AutoMigration(from = 16, to = 17),
+        AutoMigration(from = 17, to = 18),
     ],
 )
 @TypeConverters(Converters::class)
@@ -74,6 +76,7 @@ abstract class BrulionDatabase : RoomDatabase() {
     abstract fun calendarLinkDao(): CalendarLinkDao
     abstract fun teacherAbsenceDao(): TeacherAbsenceDao
     abstract fun ptMeetingDao(): PtMeetingDao
+    abstract fun childOrderDao(): ChildOrderDao
 
     /** Direct Synergia login was dropped: Librus rejects the password grant (unsupported_grant_type). */
     @DeleteColumn(tableName = "accounts", columnName = "type")

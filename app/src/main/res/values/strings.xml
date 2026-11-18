@@ -40,6 +40,8 @@
     <string name="home_parent_account">Konto rodzica · %1$s</string>
     <string name="home_student_account">Konto ucznia · %1$s</string>
     <string name="home_sync">Synchronizuj</string>
+    <string name="home_move_up">Przesuń wyżej</string>
+    <string name="home_move_down">Przesuń niżej</string>
     <string name="home_sync_never">Jeszcze nie synchronizowano</string>
     <string name="home_sync_last">Ostatnia synchronizacja: %1$s</string>
     <string name="sync_total">%1$d</string>

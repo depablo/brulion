@@ -17,6 +17,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.AlertDialog
@@ -53,6 +55,7 @@ import pl.brulion.data.sync.SyncReport
 import pl.brulion.data.sync.SyncSection
 import pl.brulion.ui.common.toUiError
 import pl.brulion.R
+import pl.brulion.data.childKey
 import pl.brulion.data.db.ProfileEntity
 import pl.brulion.ui.common.NameAvatar
 
@@ -108,12 +111,19 @@ fun AccountsScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // Children in display order; a parent and a student profile of one child move together.
+            val children = profiles.orEmpty().map { childKey(it) }.distinct()
             items(profiles.orEmpty(), key = { it.id }) { profile ->
+                val position = children.indexOf(childKey(profile))
                 ProfileCard(
                     profile = profile,
                     sync = syncs[profile.id],
                     onSync = { viewModel.sync(profile.id) },
                     onRemove = { toRemove = profile },
+                    canMoveUp = position > 0,
+                    canMoveDown = position in 0 until children.lastIndex,
+                    onMoveUp = { viewModel.moveChild(childKey(profile), -1) },
+                    onMoveDown = { viewModel.moveChild(childKey(profile), 1) },
                 )
             }
         }
@@ -143,6 +153,10 @@ private fun ProfileCard(
     sync: SyncController.State?,
     onSync: () -> Unit,
     onRemove: () -> Unit,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
 ) {
     ElevatedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
@@ -163,6 +177,12 @@ private fun ProfileCard(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+                IconButton(onClick = onMoveUp, enabled = canMoveUp) {
+                    Icon(Icons.Default.KeyboardArrowUp, stringResource(R.string.home_move_up))
+                }
+                IconButton(onClick = onMoveDown, enabled = canMoveDown) {
+                    Icon(Icons.Default.KeyboardArrowDown, stringResource(R.string.home_move_down))
                 }
                 ProfileMenu(onRemove)
             }

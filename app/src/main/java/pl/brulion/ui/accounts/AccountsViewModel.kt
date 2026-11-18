@@ -23,6 +23,11 @@ class AccountsViewModel(
 
     fun sync(profileId: Long) = sync.sync(profileId)
 
+    /** Moves the child one place up (-1) or down (+1) in the list and in every screen that follows it. */
+    fun moveChild(childKey: String, delta: Int) {
+        viewModelScope.launch { accounts.moveChild(childKey, delta) }
+    }
+
     fun remove(profileId: Long) {
         viewModelScope.launch { accounts.removeProfile(profileId) }
     }

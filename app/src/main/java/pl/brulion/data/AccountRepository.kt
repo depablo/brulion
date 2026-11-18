@@ -3,11 +3,14 @@ package pl.brulion.data
 import androidx.room.withTransaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import pl.brulion.data.db.AccountEntity
 import pl.brulion.data.db.BrulionDatabase
+import pl.brulion.data.db.ChildOrderEntity
 import pl.brulion.data.db.ProfileEntity
 import pl.brulion.librus.Librus
 import pl.brulion.librus.LibrusApi
@@ -26,11 +29,25 @@ class AccountRepository(
 ) {
     private val accounts = db.accountDao()
     private val profiles = db.profileDao()
+    private val childOrder = db.childOrderDao()
 
     /** Serializes token refreshes so parallel requests don't burn the same refresh token twice. */
     private val tokenMutex = Mutex()
 
-    val allProfiles: Flow<List<ProfileEntity>> = profiles.observeAll()
+    /** Profiles in the user's child order; every screen and print uses this order. */
+    val allProfiles: Flow<List<ProfileEntity>> = combine(profiles.observeAll(), childOrder.observeAll()) { list, rows ->
+        orderProfiles(list, rows.associate { it.childKey to it.position })
+    }
+
+    /** Moves the child of [profile] one place up (-1) or down (+1) in the list the user sees. */
+    suspend fun moveChild(key: String, delta: Int) {
+        val current = allProfiles.first().map { childKey(it) }.distinct()
+        val order = moveChildInOrder(current, current.indexOf(key), delta) ?: return
+        db.withTransaction {
+            childOrder.clear()
+            childOrder.insertAll(order.mapIndexed { position, key -> ChildOrderEntity(key, position) })
+        }
+    }
 
     class Imported(val profiles: List<ProfileEntity>, val needingAction: List<String>)
 
