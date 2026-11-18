@@ -128,7 +128,8 @@ fun MainScreen(
     }
 
     val db = appContainer().database
-    val updateAvailable by appContainer().updates.state
+    val updates = appContainer().updates
+    val updateAvailable by updates.state
         .map { it is UpdateManager.State.Available }
         .collectAsStateWithLifecycle(false)
     val unread by remember(current?.id) {
@@ -158,7 +159,8 @@ fun MainScreen(
                     if (updateAvailable) {
                         // A pill beside the menu icon: a badge on the icon itself is clipped at the screen edge.
                         Surface(
-                            onClick = { onOpen(MoreDestination.SETTINGS) },
+                            // Opens the update dialog straight away, as the update notification does.
+                            onClick = { updates.promptRequest.value = true },
                             shape = RoundedCornerShape(50),
                             color = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
