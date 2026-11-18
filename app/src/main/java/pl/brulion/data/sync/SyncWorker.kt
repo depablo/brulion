@@ -13,14 +13,15 @@ import pl.brulion.BrulionApp
 import pl.brulion.librus.SCHOOL_ZONE
 import java.time.DayOfWeek
 import java.time.Duration
+import java.time.LocalTime
 import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
 /**
  * Keeps the data, and with it the widget, fresh between app visits; changes such as a
  * cancelled lesson show up without opening the app. Runs at the times in [nextRun]: on school
- * days hourly from 6:00 to 15:00, then at 18:00, 21:00 and 23:00; at weekends every 3 hours
- * from 6:00 to 21:00. Nothing between 23:00 and 6:00.
+ * days hourly from 6:00 to 15:00, at 15:30, then at 18:00, 21:00 and 23:00; at weekends every
+ * 3 hours from 6:00 to 21:00. Nothing between 23:00 and 6:00.
  *
  * Like the reminders, it is a chain of one-time requests, so each run plans the next one.
  */
@@ -40,8 +41,11 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         /** Name of the old 3-hourly periodic job; it is cancelled so it doesn't run next to the schedule. */
         private const val OLD_WORK_NAME = "background_sync"
 
-        private val SCHOOL_DAY_HOURS = (6..15).toList() + listOf(18, 21, 23)
-        private val WEEKEND_HOURS = listOf(6, 9, 12, 15, 18, 21)
+        // 15:30 is before the 16:00 school reminders, so they see data from this half hour.
+        private val SCHOOL_DAY_TIMES = (6..15).map { LocalTime.of(it, 0) } +
+            LocalTime.of(15, 30) +
+            listOf(18, 21, 23).map { LocalTime.of(it, 0) }
+        private val WEEKEND_TIMES = listOf(6, 9, 12, 15, 18, 21).map { LocalTime.of(it, 0) }
 
         /** Plans the next run; [policy] APPEND_OR_REPLACE from a run that just finished. */
         fun schedule(context: Context, policy: ExistingWorkPolicy = ExistingWorkPolicy.KEEP) {
@@ -65,15 +69,15 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         internal fun nextRun(now: ZonedDateTime): ZonedDateTime {
             for (dayOffset in 0L..7L) {
                 val date = now.toLocalDate().plusDays(dayOffset)
-                for (hour in hoursFor(date.dayOfWeek)) {
-                    val slot = date.atTime(hour, 0).atZone(now.zone)
+                for (time in timesFor(date.dayOfWeek)) {
+                    val slot = date.atTime(time).atZone(now.zone)
                     if (slot.isAfter(now)) return slot
                 }
             }
             error("no sync slot within a week of $now")
         }
 
-        private fun hoursFor(day: DayOfWeek): List<Int> =
-            if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) WEEKEND_HOURS else SCHOOL_DAY_HOURS
+        private fun timesFor(day: DayOfWeek): List<LocalTime> =
+            if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) WEEKEND_TIMES else SCHOOL_DAY_TIMES
     }
 }

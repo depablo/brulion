@@ -28,6 +28,12 @@ class SyncScheduleTest {
     }
 
     @Test
+    fun halfPastThreeBeforeTheReminders() {
+        assertEquals(at("2026-11-16T15:30"), SyncWorker.nextRun(at("2026-11-16T15:10")))
+        assertEquals(at("2026-11-16T18:00"), SyncWorker.nextRun(at("2026-11-16T15:30")))
+    }
+
+    @Test
     fun afterThreeEveryThreeHours() {
         assertEquals(at("2026-11-16T18:00"), SyncWorker.nextRun(at("2026-11-16T15:30")))
         assertEquals(at("2026-11-16T21:00"), SyncWorker.nextRun(at("2026-11-16T18:00")))
