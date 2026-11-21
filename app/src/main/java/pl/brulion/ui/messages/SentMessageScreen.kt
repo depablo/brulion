@@ -27,11 +27,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.brulion.R
+import pl.brulion.ui.common.rememberLinkedText
 import pl.brulion.librus.MessageHtml
 import pl.brulion.ui.common.ReportButton
 import java.time.Instant
@@ -103,7 +103,7 @@ fun SentMessageScreen(viewModel: SentMessageViewModel, onBack: () -> Unit) {
             }
             SelectionContainer {
                 Text(
-                    text = current.body?.let { rememberMessageText(it) } ?: AnnotatedString(MessageHtml.toPlainText(current.preview)),
+                    text = current.body?.let { rememberMessageText(it) } ?: rememberLinkedText(MessageHtml.toPlainText(current.preview)),
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (current.body == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                 )

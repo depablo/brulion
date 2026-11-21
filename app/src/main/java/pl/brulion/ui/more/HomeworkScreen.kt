@@ -1,7 +1,7 @@
 package pl.brulion.ui.more
 
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,6 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,8 +37,10 @@ import pl.brulion.ui.common.EmptyState
 import pl.brulion.ui.common.NewBadge
 import pl.brulion.ui.common.ProfileDetailScaffold
 import pl.brulion.ui.common.appContainer
+import pl.brulion.ui.common.copyToClipboard
 import pl.brulion.ui.common.formatShort
 import pl.brulion.ui.common.isFresh
+import pl.brulion.ui.common.rememberLinkedText
 import pl.brulion.ui.common.rememberToday
 
 @Composable
@@ -85,14 +88,21 @@ fun HomeworkScreen(onBack: () -> Unit) {
     }
 }
 
-/** One assignment; tap to show the whole text when it's longer than a few lines. */
+/** One assignment; tap to show the whole text when it's longer than a few lines, long press to copy it. */
 @Composable
 private fun HomeworkRow(homework: HomeworkEntity, isNew: Boolean = false) {
     var expanded by rememberSaveable(homework.id) { mutableStateOf(false) }
+    val context = LocalContext.current
     Column(
         Modifier
             .fillMaxWidth()
-            .clickable(enabled = homework.content.isNotBlank()) { expanded = !expanded }
+            .combinedClickable(
+                onClick = { expanded = !expanded },
+                onLongClick = {
+                    val text = listOfNotNull(homework.subjectName, homework.topic, homework.content).filter { it.isNotBlank() }
+                    copyToClipboard(context, text.joinToString("\n"))
+                },
+            )
             .animateContentSize(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -117,11 +127,11 @@ private fun HomeworkRow(homework: HomeworkEntity, isNew: Boolean = false) {
             Text(meta, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (homework.topic.isNotBlank()) {
-            Text(homework.topic, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            Text(rememberLinkedText(homework.topic), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         }
         if (homework.content.isNotBlank()) {
             Text(
-                text = homework.content,
+                text = rememberLinkedText(homework.content),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = if (expanded) Int.MAX_VALUE else 3,

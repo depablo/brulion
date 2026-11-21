@@ -55,11 +55,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.fromHtml
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -67,6 +64,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import pl.brulion.R
+import pl.brulion.ui.common.linkStyles
+import pl.brulion.ui.common.linkify
+import pl.brulion.ui.common.rememberLinkedText
 import pl.brulion.data.Downloads
 import pl.brulion.librus.MessageHtml
 import pl.brulion.ui.common.NameAvatar
@@ -184,7 +184,7 @@ fun MessageScreen(viewModel: MessageViewModel, onBack: () -> Unit, onReply: () -
             }
             SelectionContainer {
                 Text(
-                    text = body?.body?.let { rememberMessageText(it) } ?: AnnotatedString(MessageHtml.toPlainText(current.preview)),
+                    text = body?.body?.let { rememberMessageText(it) } ?: rememberLinkedText(MessageHtml.toPlainText(current.preview)),
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (body == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                 )
@@ -234,21 +234,19 @@ fun MessageScreen(viewModel: MessageViewModel, onBack: () -> Unit, onReply: () -
     }
 }
 
-/** Renders the HTML some notices contain, with clickable links; plain text stays as is. */
+/** Renders the HTML some notices contain; links (`<a href>` and bare addresses) are clickable. */
 @Composable
 internal fun rememberMessageText(raw: String): AnnotatedString {
-    val linkColor = MaterialTheme.colorScheme.primary
-    return remember(raw, linkColor) {
+    val styles = linkStyles()
+    return remember(raw, styles) {
         // Bodies stored before envelopes were unwrapped show until the message is fetched again.
         val body = MessageHtml.unwrap(raw)
-        if (!MessageHtml.isHtml(body)) {
+        val text = if (!MessageHtml.isHtml(body)) {
             AnnotatedString(body)
         } else {
-            AnnotatedString.fromHtml(
-                htmlString = MessageHtml.toHtml(body),
-                linkStyles = TextLinkStyles(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)),
-            )
+            AnnotatedString.fromHtml(htmlString = MessageHtml.toHtml(body), linkStyles = styles)
         }
+        linkify(text, styles)
     }
 }
 

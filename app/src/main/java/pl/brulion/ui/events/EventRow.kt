@@ -1,6 +1,8 @@
 package pl.brulion.ui.events
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,20 +14,41 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import pl.brulion.data.db.EventEntity
 import pl.brulion.ui.common.NewBadge
+import pl.brulion.ui.common.copyToClipboard
 import pl.brulion.ui.common.formatRelative
+import pl.brulion.ui.common.rememberLinkedText
 
-/** A calendar entry ("Sprawdzian · Matematyka" + topic); [showDate] for lists spanning several days. */
+/**
+ * A calendar entry ("Sprawdzian · Matematyka" + topic); [showDate] for lists spanning several days.
+ * Tap shows the whole topic, long press copies it; web addresses in the topic open in the browser.
+ */
 @Composable
 fun EventRow(event: EventEntity, modifier: Modifier = Modifier, showDate: Boolean = false, isNew: Boolean = false) {
-    Row(modifier, verticalAlignment = Alignment.Top) {
+    var expanded by rememberSaveable(event.id) { mutableStateOf(false) }
+    val context = LocalContext.current
+    val title = listOfNotNull(event.typeName, event.subjectName).joinToString(" · ")
+    Row(
+        modifier
+            .combinedClickable(
+                onClick = { expanded = !expanded },
+                onLongClick = { copyToClipboard(context, listOf(title, event.topic).filter { it.isNotBlank() }.joinToString("\n")) },
+            )
+            .animateContentSize(),
+        verticalAlignment = Alignment.Top,
+    ) {
         Box(
             Modifier
                 .padding(top = 6.dp)
@@ -34,14 +57,13 @@ fun EventRow(event: EventEntity, modifier: Modifier = Modifier, showDate: Boolea
         )
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            val title = listOfNotNull(event.typeName, event.subjectName).joinToString(" · ")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f, fill = false),
-                    maxLines = 1,
+                    maxLines = if (expanded) Int.MAX_VALUE else 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (isNew) {
@@ -51,10 +73,10 @@ fun EventRow(event: EventEntity, modifier: Modifier = Modifier, showDate: Boolea
             }
             if (event.topic.isNotBlank()) {
                 Text(
-                    text = event.topic,
+                    text = rememberLinkedText(event.topic),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
+                    maxLines = if (expanded) Int.MAX_VALUE else 3,
                     overflow = TextOverflow.Ellipsis,
                 )
             }

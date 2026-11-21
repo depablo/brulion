@@ -3,6 +3,7 @@ package pl.brulion.ui.more
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +44,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -52,6 +55,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import pl.brulion.R
+import pl.brulion.ui.common.copyToClipboard
+import pl.brulion.ui.common.rememberLinkedText
 import pl.brulion.data.db.AnnouncementEntity
 import pl.brulion.data.db.AttendanceCategory
 import pl.brulion.data.db.AttendanceEntity
@@ -168,9 +173,17 @@ private fun MutedWordsDialog(words: List<String>, onDismiss: () -> Unit, onSave:
 @Composable
 private fun AnnouncementCard(announcement: AnnouncementEntity, dimmed: Boolean = false, actions: @Composable () -> Unit = {}) {
     var expanded by rememberSaveable(announcement.id) { mutableStateOf(false) }
+    val context = LocalContext.current
     Card(
-        onClick = { expanded = !expanded },
-        modifier = Modifier.fillMaxWidth().animateContentSize().alpha(if (dimmed) 0.6f else 1f),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(CardDefaults.shape)
+            .combinedClickable(
+                onClick = { expanded = !expanded },
+                onLongClick = { copyToClipboard(context, announcement.subject + "\n\n" + announcement.content) },
+            )
+            .animateContentSize()
+            .alpha(if (dimmed) 0.6f else 1f),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -189,7 +202,7 @@ private fun AnnouncementCard(announcement: AnnouncementEntity, dimmed: Boolean =
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = announcement.content,
+                text = rememberLinkedText(announcement.content),
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = if (expanded) Int.MAX_VALUE else 3,
                 overflow = TextOverflow.Ellipsis,

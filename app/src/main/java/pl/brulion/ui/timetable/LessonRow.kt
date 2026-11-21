@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,6 +38,7 @@ import pl.brulion.data.db.LessonState
 import pl.brulion.data.db.TimetableLessonEntity
 import pl.brulion.ui.common.formatLong
 import pl.brulion.ui.common.formatShort
+import pl.brulion.ui.common.rememberLinkedText
 
 @Composable
 fun LessonRow(
@@ -154,7 +156,9 @@ private fun EventDetail(event: EventEntity) {
             Text(event.typeName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
         }
         if (event.topic.isNotBlank()) {
-            Text(event.topic.trim(), style = MaterialTheme.typography.bodyMedium)
+            SelectionContainer {
+                Text(rememberLinkedText(event.topic.trim()), style = MaterialTheme.typography.bodyMedium)
+            }
         }
         listOfNotNull(event.subjectName, event.teacherName, event.date.formatLong()).forEach {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

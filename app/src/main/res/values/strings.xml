@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Brulion</string>
+    <string name="copied">Skopiowano</string>
 
     <string name="welcome_tagline">Librus, tylko spokojniej.</string>
     <string name="welcome_description">Oceny, plan, wiadomości i codzienne podsumowanie dla wszystkich Twoich dzieci w jednym miejscu.</string>
