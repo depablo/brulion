@@ -21,13 +21,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import pl.brulion.data.db.EventEntity
 import pl.brulion.ui.common.NewBadge
-import pl.brulion.ui.common.copyToClipboard
+import pl.brulion.ui.common.rememberCopier
 import pl.brulion.ui.common.formatRelative
 import pl.brulion.ui.common.rememberLinkedText
 
@@ -38,13 +37,13 @@ import pl.brulion.ui.common.rememberLinkedText
 @Composable
 fun EventRow(event: EventEntity, modifier: Modifier = Modifier, showDate: Boolean = false, isNew: Boolean = false) {
     var expanded by rememberSaveable(event.id) { mutableStateOf(false) }
-    val context = LocalContext.current
+    val copy = rememberCopier()
     val title = listOfNotNull(event.typeName, event.subjectName).joinToString(" · ")
     Row(
         modifier
             .combinedClickable(
                 onClick = { expanded = !expanded },
-                onLongClick = { copyToClipboard(context, listOf(title, event.topic).filter { it.isNotBlank() }.joinToString("\n")) },
+                onLongClick = { copy(listOf(title, event.topic).filter { it.isNotBlank() }.joinToString("\n")) },
             )
             .animateContentSize(),
         verticalAlignment = Alignment.Top,

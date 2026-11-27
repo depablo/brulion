@@ -195,8 +195,15 @@
     <string name="announcements_empty">Brak ogłoszeń</string>
     <string name="announcements_hide">Ukryj</string>
     <string name="announcements_restore">Przywróć</string>
-    <string name="announcements_hidden_expand">Pokaż ukryte (%1$d)</string>
-    <string name="announcements_hidden_collapse">Zwiń ukryte (%1$d)</string>
+    <string name="announcements_tab_all">Wszystkie</string>
+    <string name="announcements_tab_important">Ważne</string>
+    <string name="announcements_tab_hidden">Ukryte</string>
+    <string name="announcements_tab_count">%1$s (%2$d)</string>
+    <string name="announcements_important_mark">Oznacz jako ważne</string>
+    <string name="announcements_important_unmark">Zdejmij oznaczenie</string>
+    <string name="announcements_important_badge">Ważne</string>
+    <string name="announcements_important_empty">Nie oznaczono jeszcze ważnych ogłoszeń</string>
+    <string name="announcements_hidden_empty">Nic nie jest ukryte</string>
     <string name="announcements_muted_by">Ukryte, bo zawiera: %1$s</string>
     <string name="announcements_words">Ukrywane słowa: %1$s</string>
     <string name="announcements_words_none">Ukrywaj ogłoszenia z wybranymi słowami…</string>

@@ -29,13 +29,14 @@ import pl.brulion.data.sync.SyncSection
         FeedEntryEntity::class,
         SectionSyncEntity::class,
         HiddenAnnouncementEntity::class,
+        ImportantAnnouncementEntity::class,
         CalendarLinkEntity::class,
         HomeworkEntity::class,
         TeacherAbsenceEntity::class,
         PtMeetingEntity::class,
         ChildOrderEntity::class,
     ],
-    version = 18,
+    version = 19,
     autoMigrations = [
         AutoMigration(from = 1, to = 2, spec = BrulionDatabase.DropSynergiaLogin::class),
         AutoMigration(from = 2, to = 3),
@@ -54,6 +55,7 @@ import pl.brulion.data.sync.SyncSection
         AutoMigration(from = 15, to = 16),
         AutoMigration(from = 16, to = 17),
         AutoMigration(from = 17, to = 18),
+        AutoMigration(from = 18, to = 19),
     ],
 )
 @TypeConverters(Converters::class)
@@ -73,6 +75,7 @@ abstract class BrulionDatabase : RoomDatabase() {
     abstract fun feedDao(): FeedDao
     abstract fun sectionSyncDao(): SectionSyncDao
     abstract fun hiddenAnnouncementDao(): HiddenAnnouncementDao
+    abstract fun importantAnnouncementDao(): ImportantAnnouncementDao
     abstract fun calendarLinkDao(): CalendarLinkDao
     abstract fun teacherAbsenceDao(): TeacherAbsenceDao
     abstract fun ptMeetingDao(): PtMeetingDao

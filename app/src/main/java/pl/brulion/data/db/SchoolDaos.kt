@@ -412,6 +412,18 @@ interface HiddenAnnouncementDao {
 }
 
 @Dao
+interface ImportantAnnouncementDao {
+    @Query("SELECT id FROM important_announcements")
+    fun observeIds(): Flow<List<String>>
+
+    @Upsert
+    suspend fun mark(row: ImportantAnnouncementEntity)
+
+    @Query("DELETE FROM important_announcements WHERE id = :id")
+    suspend fun unmark(id: String)
+}
+
+@Dao
 interface CalendarLinkDao {
     @Query("SELECT * FROM calendar_links")
     suspend fun all(): List<CalendarLinkEntity>

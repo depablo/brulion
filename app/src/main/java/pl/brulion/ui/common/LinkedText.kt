@@ -1,18 +1,21 @@
 package pl.brulion.ui.common
 
 import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.widget.Toast
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
+import kotlinx.coroutines.launch
 import pl.brulion.R
 
 /** Bare web addresses in teachers' texts: http(s)://… or www.… */
@@ -65,11 +68,22 @@ fun rememberLinkedText(text: String): AnnotatedString {
 }
 
 /**
- * Puts [text] on the clipboard and confirms it. Always toasts: some ROMs (e.g. LineageOS)
- * lack the system clipboard preview that Android 13+ normally shows.
+ * Returns a function that puts text on the clipboard and confirms it with a toast
+ * (some ROMs, e.g. LineageOS, lack the clipboard preview Android 13+ normally shows).
+ * Goes through Compose's clipboard, the same path text selection uses, rather than
+ * calling the system ClipboardManager from app code.
  */
-fun copyToClipboard(context: Context, text: String) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.app_name), text))
-    Toast.makeText(context, R.string.copied, Toast.LENGTH_SHORT).show()
+@Composable
+fun rememberCopier(): (String) -> Unit {
+    val clipboard = LocalClipboard.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    return remember(clipboard, context, scope) {
+        { text ->
+            scope.launch {
+                clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(context.getString(R.string.app_name), text)))
+                Toast.makeText(context, R.string.copied, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 }

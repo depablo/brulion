@@ -26,4 +26,20 @@ class AnnouncementsTest {
         assertEquals(listOf("3"), split.visible.map { it.id })
         assertEquals(listOf("1" to null, "2" to "matura"), split.hidden.map { it.announcement.id to it.mutedBy })
     }
+
+    @Test
+    fun importantPinnedToTopKeepingDateOrder() {
+        val all = listOf(notice("1", "Zebranie"), notice("2", "Wycieczka"), notice("3", "Egzamin"))
+        val split = Announcements.split(all, hiddenIds = emptySet(), words = emptyList(), importantIds = setOf("3"))
+        assertEquals(listOf("3", "1", "2"), split.visible.map { it.id })
+        assertEquals(setOf("3"), split.important)
+    }
+
+    @Test
+    fun hiddenImportantIsNotListedAsVisibleImportant() {
+        val all = listOf(notice("1", "Zebranie"), notice("2", "Wycieczka"))
+        val split = Announcements.split(all, hiddenIds = setOf("2"), words = emptyList(), importantIds = setOf("2"))
+        assertEquals(listOf("1"), split.visible.map { it.id })
+        assertEquals(emptySet<String>(), split.important)
+    }
 }

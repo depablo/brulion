@@ -22,7 +22,6 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -53,14 +52,16 @@ import java.time.LocalDate
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimetableTab(profileId: Long) {
-    var week by remember { mutableStateOf(false) }
+    // The view picked last time is remembered, so the plan opens the way the user left it.
+    val settings = appContainer().settings
+    val week by settings.timetableWeek.collectAsStateWithLifecycle()
     Column(Modifier.fillMaxSize()) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            FilterChip(selected = !week, onClick = { week = false }, label = { Text(stringResource(R.string.timetable_view_day)) })
-            FilterChip(selected = week, onClick = { week = true }, label = { Text(stringResource(R.string.timetable_view_week)) })
+            FilterChip(selected = !week, onClick = { settings.setTimetableWeek(false) }, label = { Text(stringResource(R.string.timetable_view_day)) })
+            FilterChip(selected = week, onClick = { settings.setTimetableWeek(true) }, label = { Text(stringResource(R.string.timetable_view_week)) })
         }
         if (week) WeekPlan(profileId, Modifier.weight(1f)) else DayPlan(profileId, Modifier.weight(1f))
     }

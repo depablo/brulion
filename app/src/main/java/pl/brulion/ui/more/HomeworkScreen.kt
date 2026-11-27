@@ -25,7 +25,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,7 +36,7 @@ import pl.brulion.ui.common.EmptyState
 import pl.brulion.ui.common.NewBadge
 import pl.brulion.ui.common.ProfileDetailScaffold
 import pl.brulion.ui.common.appContainer
-import pl.brulion.ui.common.copyToClipboard
+import pl.brulion.ui.common.rememberCopier
 import pl.brulion.ui.common.formatShort
 import pl.brulion.ui.common.isFresh
 import pl.brulion.ui.common.rememberLinkedText
@@ -92,7 +91,7 @@ fun HomeworkScreen(onBack: () -> Unit) {
 @Composable
 private fun HomeworkRow(homework: HomeworkEntity, isNew: Boolean = false) {
     var expanded by rememberSaveable(homework.id) { mutableStateOf(false) }
-    val context = LocalContext.current
+    val copy = rememberCopier()
     Column(
         Modifier
             .fillMaxWidth()
@@ -100,7 +99,7 @@ private fun HomeworkRow(homework: HomeworkEntity, isNew: Boolean = false) {
                 onClick = { expanded = !expanded },
                 onLongClick = {
                     val text = listOfNotNull(homework.subjectName, homework.topic, homework.content).filter { it.isNotBlank() }
-                    copyToClipboard(context, text.joinToString("\n"))
+                    copy(text.joinToString("\n"))
                 },
             )
             .animateContentSize(),

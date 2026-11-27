@@ -31,12 +31,19 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -45,7 +52,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -55,7 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import pl.brulion.R
-import pl.brulion.ui.common.copyToClipboard
+import pl.brulion.ui.common.rememberCopier
 import pl.brulion.ui.common.rememberLinkedText
 import pl.brulion.data.db.AnnouncementEntity
 import pl.brulion.data.db.AttendanceCategory
@@ -80,6 +86,14 @@ import java.time.LocalDate
 
 private val ListPadding = PaddingValues(16.dp)
 
+/** The tabs on the announcements screen, in the order they appear. */
+private object AnnouncementTab {
+    const val ALL = 0
+    const val IMPORTANT = 1
+    const val HIDDEN = 2
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnnouncementsScreen(onBack: () -> Unit) {
     ProfileDetailScaffold(stringResource(R.string.section_announcements), onBack) { profile ->
@@ -88,38 +102,38 @@ fun AnnouncementsScreen(onBack: () -> Unit) {
         val scope = rememberCoroutineScope()
         val split by remember(profile.id) { announcements.observe(profile.id) }.collectAsStateWithLifecycle(null)
         val words by container.settings.mutedWords.collectAsStateWithLifecycle()
-        var showHidden by rememberSaveable { mutableStateOf(false) }
+        var tab by rememberSaveable { mutableIntStateOf(AnnouncementTab.ALL) }
         var editWords by rememberSaveable { mutableStateOf(false) }
         var query by rememberSaveable { mutableStateOf("") }
-        val (allVisible, hidden) = split ?: return@ProfileDetailScaffold
-        val visible = allVisible.filter { matchesQuery(query, it.subject, it.content, it.authorName) }
+        val (allVisible, hidden, important) = split ?: return@ProfileDetailScaffold
         if (allVisible.isEmpty() && hidden.isEmpty()) {
             EmptyState(Icons.Outlined.Campaign, stringResource(R.string.announcements_empty))
             return@ProfileDetailScaffold
         }
+        val matching = allVisible.filter { matchesQuery(query, it.subject, it.content, it.authorName) }
+        val shown = if (tab == AnnouncementTab.IMPORTANT) matching.filter { it.id in important } else matching
+        val shownHidden = hidden.filter { matchesQuery(query, it.announcement.subject, it.announcement.content, it.announcement.authorName) }
+        val tabLabels = listOf(
+            stringResource(R.string.announcements_tab_count, stringResource(R.string.announcements_tab_all), allVisible.size),
+            stringResource(R.string.announcements_tab_count, stringResource(R.string.announcements_tab_important), important.size),
+            stringResource(R.string.announcements_tab_count, stringResource(R.string.announcements_tab_hidden), hidden.size),
+        )
         LazyColumn(Modifier.fillMaxSize(), contentPadding = ListPadding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            item(key = "tabs") {
+                SecondaryTabRow(selectedTabIndex = tab) {
+                    tabLabels.forEachIndexed { index, label ->
+                        Tab(selected = tab == index, onClick = { tab = index }, text = { Text(label, maxLines = 1) })
+                    }
+                }
+            }
             item(key = "search") {
                 SearchField(query = query, onQueryChange = { query = it }, placeholder = stringResource(R.string.announcements_search))
             }
-            if (visible.isEmpty()) {
-                item { Text(stringResource(R.string.search_nothing), color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            }
-            items(visible, key = { it.id }) { announcement ->
-                AnnouncementCard(announcement) {
-                    TextButton(onClick = { scope.launch { announcements.hide(announcement.id) } }) {
-                        Text(stringResource(R.string.announcements_hide))
-                    }
+            if (tab == AnnouncementTab.HIDDEN) {
+                if (shownHidden.isEmpty()) {
+                    item { Text(stringResource(if (hidden.isEmpty()) R.string.announcements_hidden_empty else R.string.search_nothing), color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
-            }
-            if (hidden.isNotEmpty()) {
-                item(key = "hidden") {
-                    TextButton(onClick = { showHidden = !showHidden }) {
-                        Text(stringResource(if (showHidden) R.string.announcements_hidden_collapse else R.string.announcements_hidden_expand, hidden.size))
-                    }
-                }
-            }
-            if (showHidden) {
-                items(hidden, key = { "h" + it.announcement.id }) { (announcement, mutedBy) ->
+                items(shownHidden, key = { "h" + it.announcement.id }) { (announcement, mutedBy) ->
                     AnnouncementCard(announcement, dimmed = true) {
                         if (mutedBy == null) {
                             TextButton(onClick = { scope.launch { announcements.show(announcement.id) } }) {
@@ -131,6 +145,34 @@ fun AnnouncementsScreen(onBack: () -> Unit) {
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                        }
+                    }
+                }
+            } else {
+                if (shown.isEmpty()) {
+                    val text = when {
+                        query.isNotBlank() -> R.string.search_nothing
+                        tab == AnnouncementTab.IMPORTANT -> R.string.announcements_important_empty
+                        else -> R.string.search_nothing
+                    }
+                    item { Text(stringResource(text), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                }
+                // Swiping either way hides the card; the hidden tab brings it back.
+                items(shown, key = { it.id }) { announcement ->
+                    val isImportant = announcement.id in important
+                    SwipeToHide(onHide = { scope.launch { announcements.hide(announcement.id) } }) {
+                        AnnouncementCard(announcement, important = isImportant) {
+                            TextButton(onClick = {
+                                scope.launch {
+                                    if (isImportant) announcements.unmarkImportant(announcement.id)
+                                    else announcements.markImportant(announcement.id)
+                                }
+                            }) {
+                                Text(stringResource(if (isImportant) R.string.announcements_important_unmark else R.string.announcements_important_mark))
+                            }
+                            TextButton(onClick = { scope.launch { announcements.hide(announcement.id) } }) {
+                                Text(stringResource(R.string.announcements_hide))
+                            }
                         }
                     }
                 }
@@ -153,6 +195,38 @@ fun AnnouncementsScreen(onBack: () -> Unit) {
     }
 }
 
+/**
+ * Wraps a card so that a swipe in either direction hides it. The card leaves the list when the
+ * database reports the change, so the swipe state needs no reset.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwipeToHide(onHide: () -> Unit, content: @Composable () -> Unit) {
+    val state = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
+        // Settling back is always allowed; any completed swipe hides the card.
+        if (value != SwipeToDismissBoxValue.Settled) onHide()
+        true
+    })
+    SwipeToDismissBox(
+        state = state,
+        backgroundContent = {
+            val toEnd = state.dismissDirection == SwipeToDismissBoxValue.StartToEnd
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .clip(CardDefaults.shape)
+                    .background(MaterialTheme.colorScheme.secondaryContainer)
+                    .padding(horizontal = 24.dp),
+                contentAlignment = if (toEnd) Alignment.CenterStart else Alignment.CenterEnd,
+            ) {
+                Text(stringResource(R.string.announcements_hide), color = MaterialTheme.colorScheme.onSecondaryContainer)
+            }
+        },
+    ) {
+        content()
+    }
+}
+
 @Composable
 private fun MutedWordsDialog(words: List<String>, onDismiss: () -> Unit, onSave: (String) -> Unit) {
     var text by rememberSaveable { mutableStateOf(words.joinToString(", ")) }
@@ -171,16 +245,21 @@ private fun MutedWordsDialog(words: List<String>, onDismiss: () -> Unit, onSave:
 }
 
 @Composable
-private fun AnnouncementCard(announcement: AnnouncementEntity, dimmed: Boolean = false, actions: @Composable () -> Unit = {}) {
+private fun AnnouncementCard(
+    announcement: AnnouncementEntity,
+    dimmed: Boolean = false,
+    important: Boolean = false,
+    actions: @Composable () -> Unit = {},
+) {
     var expanded by rememberSaveable(announcement.id) { mutableStateOf(false) }
-    val context = LocalContext.current
+    val copy = rememberCopier()
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(CardDefaults.shape)
             .combinedClickable(
                 onClick = { expanded = !expanded },
-                onLongClick = { copyToClipboard(context, announcement.subject + "\n\n" + announcement.content) },
+                onLongClick = { copy(announcement.subject + "\n\n" + announcement.content) },
             )
             .animateContentSize()
             .alpha(if (dimmed) 0.6f else 1f),
@@ -194,6 +273,9 @@ private fun AnnouncementCard(announcement: AnnouncementEntity, dimmed: Boolean =
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
+                if (important) {
+                    Text(stringResource(R.string.announcements_important_badge), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                }
                 if (isFresh(announcement.firstSeenAt)) NewBadge()
             }
             Text(

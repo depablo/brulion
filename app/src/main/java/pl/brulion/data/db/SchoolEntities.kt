@@ -72,6 +72,13 @@ data class HiddenAnnouncementEntity(
     val hiddenAt: Long,
 )
 
+/** Announcements the user marked as important; they are pinned to the top. Ids are school-wide, like hidden ones. */
+@Entity(tableName = "important_announcements")
+data class ImportantAnnouncementEntity(
+    @PrimaryKey val id: String,
+    val markedAt: Long,
+)
+
 /** A planner entry Brulion put into the phone's calendar; [fingerprint] tells when to update it. */
 @Entity(tableName = "calendar_links")
 data class CalendarLinkEntity(

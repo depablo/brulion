@@ -50,6 +50,15 @@ class Settings(context: Context) {
         _motivationEnabled.value = enabled
     }
 
+    /** The timetable view last picked: true for the week grid, false for a single day. Remembered across launches. */
+    private val _timetableWeek = MutableStateFlow(prefs.getBoolean(KEY_TIMETABLE_WEEK, false))
+    val timetableWeek: StateFlow<Boolean> = _timetableWeek
+
+    fun setTimetableWeek(week: Boolean) {
+        prefs.edit().putBoolean(KEY_TIMETABLE_WEEK, week).apply()
+        _timetableWeek.value = week
+    }
+
     /** Minutes after midnight. */
     private val _summaryTime = MutableStateFlow(prefs.getInt(KEY_SUMMARY_TIME, 19 * 60))
     val summaryTime: StateFlow<Int> = _summaryTime
@@ -159,6 +168,7 @@ class Settings(context: Context) {
         const val KEY_SUMMARY_OFF_MIGRATED = "summary_off_migrated"
         const val KEY_MOTIVATION = "grade_motivation"
         const val KEY_REMINDERS = "school_reminders"
+        const val KEY_TIMETABLE_WEEK = "timetable_week_view"
 
         /** "matura, LO;  olimpiada" -> [matura, LO, olimpiada] */
         fun parseWords(text: String): List<String> =
