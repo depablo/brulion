@@ -50,7 +50,7 @@ class LibrusApi(private val http: LibrusHttp) {
                 "TokenIsExpired" -> Reason.TOKEN_EXPIRED
                 "Request is denied", "AccessDeny", "Insufficient scopes" -> Reason.ACCESS_DENIED
                 "Resource not found", "NotFound" -> Reason.NOT_FOUND
-                "LuckyNumberIsNotActive", "NotesIsNotActive" -> Reason.FEATURE_DISABLED
+                "LuckyNumberIsNotActive", "NotesIsNotActive", "TeacherFreeDaysIsNotActive" -> Reason.FEATURE_DISABLED
                 "Maintenance" -> Reason.MAINTENANCE
                 else -> if (result.code == 401) Reason.TOKEN_EXPIRED else Reason.UNKNOWN
             }
